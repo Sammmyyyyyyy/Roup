@@ -1,0 +1,29 @@
+# IntelliJ IDEA / JetBrains Project Files
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# Eclipse
+.classpath
+.project
+.settings/
+
+# VS Code
+.vscode/
+
+# Maven build directory
+target/
+
+# Gradle build directory (if applicable)
+.gradle/
+build/
+
+# Operating System Files
+.DS_Store
+Thumbs.db
+
+# Log and Environment Files
+*.log
+.env
