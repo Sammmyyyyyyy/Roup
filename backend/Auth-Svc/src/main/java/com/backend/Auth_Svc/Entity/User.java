@@ -4,6 +4,8 @@ import com.backend.Auth_Svc.Enum.ExpertStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Getter
@@ -25,9 +27,9 @@ public class User {
 
     private String avatar;
     private ExpertStatus expertStatus;
-    private double totalBalance;
-    private double availableBalance;
-    private double reservedBalance;
+    private BigDecimal totalBalance;
+    private BigDecimal availableBalance;
+    private BigDecimal reservedBalance;
 
     private LocalDateTime createdAt;
 }
