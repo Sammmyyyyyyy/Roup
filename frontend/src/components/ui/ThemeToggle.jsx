@@ -1,5 +1,5 @@
 import React from 'react';
-import { useTheme } from './appContext.js';
+import { useTheme } from '../../store/appContext.js';
 
 export default function ThemeToggle({ compact = false }) {
   const { theme, toggleTheme } = useTheme();

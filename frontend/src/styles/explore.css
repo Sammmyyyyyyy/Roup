@@ -141,10 +141,11 @@
 .bookmark-button.is-saved{border-color:var(--mint);background:var(--mint);color:#08150d}
 .bookmark-button.is-saved svg{fill:currentColor}
 .listing-card-body{padding:12px 13px 13px}
-.listing-card-heading{min-height:52px;display:flex;justify-content:space-between;gap:9px}
+.listing-card-body{min-width:0;display:flex;flex-direction:column;align-items:stretch;gap:0;overflow:visible}
+.listing-card-heading{min-height:0;display:flex;justify-content:space-between;gap:9px;margin-bottom:8px}
 .listing-category{display:block;color:var(--mint);font:7px var(--mono);letter-spacing:.055em;text-transform:uppercase}
-.listing-card h3{margin:4px 0 2px;overflow:hidden;color:var(--text);font:600 12px/1.4 var(--sans);letter-spacing:-.025em;text-overflow:ellipsis;white-space:nowrap}
-.listing-card-heading p{margin:0;overflow:hidden;color:var(--muted);font-size:8px;text-overflow:ellipsis;white-space:nowrap}
+.listing-card h3{margin:4px 0 2px;overflow-wrap:anywhere;color:var(--text);font:600 12px/1.4 var(--sans);letter-spacing:-.025em}
+.listing-card-heading p{margin:0;overflow-wrap:anywhere;color:var(--muted);font-size:8px;line-height:1.45}
 .listing-prices{display:flex;align-items:center;gap:15px}
 .listing-prices>div{min-width:0;display:flex;flex-direction:column;gap:3px}
 .listing-prices span{color:var(--quiet);font:6px var(--mono);letter-spacing:.035em}
@@ -269,8 +270,8 @@ html[data-theme="light"] .explore-primary-button:hover{background:#066c4d}
 .explore-marketplace-wide .listing-status{font-size:7px;line-height:1.5}
 .explore-marketplace-wide .listing-status b{color:var(--quiet);font-weight:400}
 .explore-marketplace-wide .listing-card .market-link-button{min-height:30px;margin-top:auto;padding-top:8px;border-top:1px solid var(--line);font-size:9px}
-.explore-marketplace-wide .market-art-category{left:18px;bottom:18px}
-.listing-art-image{position:absolute;inset:0;z-index:0;width:100%;height:100%;object-fit:cover;opacity:.66;mix-blend-mode:screen}
+.explore-marketplace-wide .market-art-category{display:block;margin:0 0 8px;color:var(--mint);font:600 10px/1.35 var(--mono);letter-spacing:.055em;text-transform:uppercase}
+.listing-art-image{position:absolute;inset:0;z-index:0;width:100%;height:100%;object-fit:cover;object-position:center;opacity:.66;mix-blend-mode:screen;pointer-events:none}
 .listing-art>.art-kicker,.listing-art>.art-emblem,.listing-art>strong,.listing-art>small,.listing-art>.art-ticket-notch{z-index:2}
 .explore-card-skeleton{min-height:315px;overflow:hidden}
 .explore-skeleton-art{height:190px;margin:10px;border-radius:5px;background:linear-gradient(110deg,var(--panel-light) 25%,color-mix(in srgb,var(--mint) 12%,var(--panel-light)) 45%,var(--panel-light) 65%);background-size:220% 100%;animation:explore-skeleton 1.4s ease-in-out infinite}

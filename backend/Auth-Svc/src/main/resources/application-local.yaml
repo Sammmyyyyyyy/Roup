@@ -8,6 +8,3 @@ spring:
     hibernate:
       ddl-auto: update
     open-in-view: false
-roup:
-  market:
-    max-resale-multiplier: ${ROUP_MAX_RESALE_MULTIPLIER:1.2}

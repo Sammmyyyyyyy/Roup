@@ -1,102 +1,6 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { createRoot } from 'react-dom/client';
-import './styles.css';
-import AuthPages from './AuthPages.jsx';
-import ThemeToggle from './ThemeToggle.jsx';
-import { AuthContext, NavigationContext, ThemeContext, useNavigate } from './appContext.js';
-import ExplorePage from './ExplorePage.jsx';
-import { AuctionsPage, ListingsPage, MarketsPage, OrdersPage } from './MarketplacePages.jsx';
-import './theme.css';
-
-function readSession() {
-  try {
-    const saved = sessionStorage.getItem('roup-auth-session');
-    if (!saved) return null;
-    const session = JSON.parse(saved);
-    const payload = JSON.parse(atob(session.jwt.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
-    if (!payload.exp || payload.exp * 1000 <= Date.now()) {
-      sessionStorage.removeItem('roup-auth-session');
-      return null;
-    }
-    return session;
-  } catch {
-    sessionStorage.removeItem('roup-auth-session');
-    return null;
-  }
-}
-
-function App() {
-  const [path, setPath] = useState(`${window.location.pathname}${window.location.search}`);
-  const [session, setSession] = useState(readSession);
-  const [notice, setNotice] = useState('');
-  const [theme, setTheme] = useState(() => document.documentElement.dataset.theme === 'light' ? 'light' : 'dark');
-
-  useEffect(() => {
-    const onPopState = () => setPath(`${window.location.pathname}${window.location.search}`);
-    window.addEventListener('popstate', onPopState);
-    return () => window.removeEventListener('popstate', onPopState);
-  }, []);
-
-  useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-    const themeColor = document.querySelector('meta[name="theme-color"]');
-    if (themeColor) themeColor.content = theme === 'light' ? '#f7f9f7' : '#070b09';
-    try { localStorage.setItem('roup-theme', theme); } catch { /* Theme still applies for this visit. */ }
-  }, [theme]);
-
-  const toggleTheme = () => setTheme((current) => {
-    const next = current === 'dark' ? 'light' : 'dark';
-    document.documentElement.dataset.theme = next;
-    return next;
-  });
-
-  const navigate = (to, options = {}) => {
-    if (options.replace) window.history.replaceState({}, '', to);
-    else window.history.pushState({}, '', to);
-    setPath(`${window.location.pathname}${window.location.search}`);
-    if (options.notice) setNotice(options.notice);
-    window.scrollTo({ top: 0, behavior: 'instant' });
-    if (window.location.hash) {
-      const targetId = decodeURIComponent(window.location.hash.slice(1));
-      window.setTimeout(() => document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
-    }
-  };
-
-  const currentPath = window.location.pathname;
-  const isProtectedPath = ['/explore', '/markets', '/auctions', '/orders', '/listings'].includes(currentPath) || currentPath.startsWith('/markets/') || currentPath.startsWith('/auctions/');
-
-  useEffect(() => {
-    if (isProtectedPath && !session) {
-      const destination = `${window.location.pathname}${window.location.search}`;
-      navigate(`/login?next=${encodeURIComponent(destination)}`, { replace: true });
-    }
-  }, [path, session]);
-
-  const authenticate = (user) => {
-    const { jwt, ...profile } = user;
-    const nextSession = { user: profile, jwt };
-    sessionStorage.setItem('roup-auth-session', JSON.stringify(nextSession));
-    setSession(nextSession);
-  };
-
-  const signOut = () => {
-    try { sessionStorage.removeItem('roup-auth-session'); } catch { /* Clear the in-memory session regardless. */ }
-    setSession(null);
-  };
-
-  const auth = { session, authenticate, signOut };
-  const authPath = currentPath === '/login' || currentPath === '/signup' || (isProtectedPath && !session);
-  const protectedPage = currentPath === '/explore' ? <ExplorePage />
-    : currentPath === '/markets' || currentPath.startsWith('/markets/') ? <MarketsPage path={currentPath} />
-      : currentPath === '/auctions' || currentPath.startsWith('/auctions/') ? <AuctionsPage path={currentPath} />
-        : currentPath === '/orders' ? <OrdersPage />
-          : currentPath === '/listings' ? <ListingsPage /> : null;
-
-  return <ThemeContext.Provider value={{ theme, toggleTheme }}><AuthContext.Provider value={auth}><NavigationContext.Provider value={navigate}>
-    {authPath ? <AuthPages path={isProtectedPath ? '/login' : currentPath} /> : protectedPage || <><Navbar session={session} />{notice && <div className="auth-toast" role="status"><span>{notice}</span><button type="button" aria-label="Dismiss message" onClick={() => setNotice('')}>×</button></div>}<LandingPage /></>}
-  </NavigationContext.Provider></AuthContext.Provider></ThemeContext.Provider>;
-}
-
+import { useNavigate } from '../store/appContext.js';
+import ThemeToggle from '../components/ui/ThemeToggle.jsx';
 const Icon = ({ name, size = 18, ...props }) => {
   const paths = {
     arrow: <><path d="M4 12h15M13 6l6 6-6 6" /></>,
@@ -408,9 +312,8 @@ function Footer() {
   return <footer className="site-footer" id="footer"><div className="shell footer-top"><div className="footer-brand-block"><Brand /><p>A secondary marketplace for limited-edition passes and collectibles.</p><span className="footer-note"><i /> A market for the moments that matter</span></div><div className="footer-links">{footerGroups.map((group) => <div key={group.title}><span className="footer-label">{group.title}</span>{group.links.map(([label, href]) => <a href={href} key={label}>{label}</a>)}</div>)}<div><span className="footer-label">ROUP EXCHANGE</span><span className="footer-legal">Terms &amp; Privacy</span><span className="footer-legal">Contact details coming soon</span></div></div></div><div className="shell footer-bottom"><span>© 2026 Roup Exchange</span><span>Prices and market information are illustrative</span><a href="#top">Back to top ↑</a></div><div className="footer-wordmark-wrap" data-reveal=""><div className="footer-wordmark" aria-hidden="true">Roup</div></div></footer>;
 }
 
-function LandingPage() {
+export default function LandingPage({ session, notice, onDismissNotice }) {
   useScrollEffects();
-  return <><main><Hero /><Capabilities /><CarouselSection /><FeatureGrid /><Journey /><Showcase /></main><Footer /> </>;
+  return <><Navbar session={session} />{notice && <div className="auth-toast" role="status"><span>{notice}</span><button type="button" aria-label="Dismiss message" onClick={onDismissNotice}>×</button></div>}<main><Hero /><Capabilities /><CarouselSection /><FeatureGrid /><Journey /><Showcase /></main><Footer /> </>;
 }
 
-createRoot(document.getElementById('root')).render(<React.StrictMode><App /></React.StrictMode>);

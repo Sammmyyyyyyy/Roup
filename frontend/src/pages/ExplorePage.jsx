@@ -1,8 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useAuth, useNavigate } from './appContext.js';
-import AppShell from './AppShell.jsx';
-import { filterMarketplaceItems, getItemArtworkLabel, loadMarketplaceItems, marketplaceCategories } from './marketplaceData.js';
-import './explore.css';
+import { useNavigate } from '../store/appContext.js';
+import AppShell from '../components/layout/AppShell.jsx';
+import { filterMarketplaceItems, getItemArtworkLabel, marketplaceCategories } from '../utils/marketplaceData.js';
+import { useDemoData } from '../store/demoDataStore.jsx';
+import { demoMarkets } from '../data/demo/marketplace.js';
+import '../styles/explore.css';
 
 const icons = {
   compass: <><circle cx="12" cy="12" r="9" /><path d="m15.5 8.5-2.3 4.7-4.7 2.3 2.3-4.7 4.7-2.3Z" /></>,
@@ -25,23 +27,6 @@ function Icon({ name, size = 18, ...props }) {
   return <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round" {...props}>{icons[name] || icons.spark}</svg>;
 }
 
-function readWatchlist(key) {
-  try {
-    const value = JSON.parse(sessionStorage.getItem(`roup-watchlist:${key}`) || '[]');
-    return Array.isArray(value) ? value.filter((id) => typeof id === 'string') : [];
-  } catch { return []; }
-}
-
-function useWatchlist(userKey) {
-  const [savedIds, setSavedIds] = useState(() => readWatchlist(userKey));
-  useEffect(() => setSavedIds(readWatchlist(userKey)), [userKey]);
-  useEffect(() => {
-    try { sessionStorage.setItem(`roup-watchlist:${userKey}`, JSON.stringify(savedIds)); } catch { /* Save remains available in memory for this visit. */ }
-  }, [userKey, savedIds]);
-  const toggle = (id) => setSavedIds((current) => current.includes(id) ? current.filter((saved) => saved !== id) : [...current, id]);
-  return { savedIds, toggle };
-}
-
 function Artwork({ item, featured = false }) {
   const [imageFailed, setImageFailed] = useState(false);
   const monogram = ({ shore: 'NS', solstice: 'SD', afterhours: 'AH', afterglow: 'AG', nightgarden: 'NG', fieldnotes: 'FN' })[item.art]
@@ -62,7 +47,7 @@ function DemoLabel({ children = 'DEMO DATA' }) {
 }
 
 function BookmarkButton({ saved, onClick, label }) {
-  return <button className={`bookmark-button${saved ? ' is-saved' : ''}`} type="button" aria-pressed={saved} aria-label={saved ? `Remove ${label} from your local watchlist` : `Save ${label} to your local watchlist`} title={saved ? 'Remove from this tab’s watchlist' : 'Save in this tab’s watchlist'} onClick={onClick}><Icon name="bookmark" size={16} /></button>;
+  return <button className={`bookmark-button${saved ? ' is-saved' : ''}`} type="button" aria-pressed={saved} aria-label={saved ? `Remove ${label} from your local watchlist` : `Save ${label} to your local watchlist`} title={saved ? 'Remove from your browser watchlist' : 'Save to your browser watchlist'} onClick={onClick}><Icon name="bookmark" size={16} /></button>;
 }
 
 function PriceLine({ item }) {
@@ -71,8 +56,9 @@ function PriceLine({ item }) {
 
 function ListingCard({ item, saved, onSave, onView }) {
   return <article className="listing-card">
-    <div className="listing-card-art"><Artwork item={item} /><span className="market-art-category">{item.category}</span><BookmarkButton saved={saved} onClick={onSave} label={item.name} /></div>
+    <div className="listing-card-art"><Artwork item={item} /><BookmarkButton saved={saved} onClick={onSave} label={item.name} /></div>
     <div className="listing-card-body">
+      <span className="market-art-category">{item.category}</span>
       <div className="listing-card-heading"><div><span className="listing-category">{item.isDemo ? 'EXAMPLE LISTING' : 'SELLER SUBMITTED'}</span><h3>{item.name}</h3><p>{item.event}</p></div></div>
       {item.description && <p className="explore-card-description">{item.description}</p>}
       <PriceLine item={item} />
@@ -111,7 +97,7 @@ function AuctionsPanel() {
 
 function WatchlistPanel({ items, onView }) {
   return <section className="market-info-panel watchlist-panel" id="watchlist" aria-labelledby="watchlist-title"><div className="panel-heading"><span className="panel-icon"><Icon name="bookmark" size={16} /></span><h2 id="watchlist-title">Your Watchlist</h2></div>
-    {items.length ? <><p className="watchlist-note">Saved in this browser tab only. Not synced to an account.</p><ul className="watchlist-list">{items.map((item) => <li key={item.id}><Artwork item={item} /><div><b>{item.name}</b><small>{item.event}</small><strong>${item.askingPrice.toFixed(2)} <i>{item.isDemo ? 'example ask' : 'asking price'}</i></strong></div><button type="button" aria-label={`View ${item.name} market details`} onClick={() => onView(item)}><Icon name="chevron" size={15} /></button></li>)}</ul></>
+    {items.length ? <><p className="watchlist-note">Saved in this browser. Not synced to an account.</p><ul className="watchlist-list">{items.map((item) => <li key={item.id}><Artwork item={item} /><div><b>{item.name}</b><small>{item.event}</small><strong>${item.askingPrice.toFixed(2)} <i>{item.isDemo ? 'example ask' : 'asking price'}</i></strong></div><button type="button" aria-label={`View ${item.name} market details`} onClick={() => onView(item)}><Icon name="chevron" size={15} /></button></li>)}</ul></>
       : <div className="panel-empty watchlist-empty"><span className="empty-art"><Icon name="bookmark" size={18} /></span><b>Nothing saved yet.</b><small>Save items you like to find them here later.</small><a href="#market-list">Explore Items <Icon name="arrow" size={13} /></a></div>}
   </section>;
 }
@@ -121,32 +107,20 @@ function ExploreCardSkeleton() {
 }
 
 export default function ExplorePage() {
-  const { session } = useAuth();
   const navigate = useNavigate();
+  const demo = useDemoData();
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('all');
   const [sort, setSort] = useState('recent');
   const [visibleCount, setVisibleCount] = useState(12);
-  const [listings, setListings] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState('');
-  const user = session?.user;
-  const userKey = user?.id || user?.emailId || 'roup-session';
-  const { savedIds, toggle: toggleSaved } = useWatchlist(userKey);
-
-  useEffect(() => {
-    let active = true;
-    loadMarketplaceItems(session?.jwt).then((items) => {
-      if (!active) return;
-      setListings(items);
-      setLoading(false);
-    }).catch(() => {
-      if (!active) return;
-      setLoadError('Example listings could not be loaded. Refresh the page to try again.');
-      setLoading(false);
-    });
-    return () => { active = false; };
-  }, [session?.jwt]);
+  const listings = useMemo(() => [
+    ...demoMarkets.map((item, index) => ({ id: item.id, name: item.itemName, event: item.eventName, category: item.category, filter: /vip/i.test(item.category) ? 'vip' : /merch/i.test(item.category) ? 'merchandise' : /collect/i.test(item.category) ? 'collectibles' : 'festival', faceValue: item.faceValue, askingPrice: item.askingPrice, quantity: item.quantity, description: item.description, imageUrl: '', art: item.art, artLabel: `${item.eventName} illustrative listing artwork`, isDemo: true, status: item.status, listedOrder: index, bestBid: item.bestBid ?? null, bestAsk: item.bestAsk ?? null })),
+    ...demo.listings.filter((item) => item.status === 'ACTIVE').map((item, index) => ({ ...item, name: item.itemName, event: item.eventName, filter: /vip/i.test(item.category) ? 'vip' : /merch/i.test(item.category) ? 'merchandise' : /collect/i.test(item.category) ? 'collectibles' : 'festival', imageUrl: item.imageUrl || '', isDemo: true, listedOrder: Date.parse(item.createdAt) || -index, artLabel: `${item.eventName} demo listing artwork` })),
+  ], [demo.listings]);
+  const savedIds = demo.watchlist.filter((key) => key.startsWith('market:')).map((key) => key.slice(7));
+  const toggleSaved = (id) => demo.toggleWatchlist('market', id);
+  const loading = false;
+  const loadError = '';
 
   useEffect(() => {
     document.title = 'Explore Marketplace | Roup';

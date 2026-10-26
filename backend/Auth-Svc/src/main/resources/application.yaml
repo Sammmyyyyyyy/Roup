@@ -1,6 +1,3 @@
 spring:
   application:
     name: Auth-Svc
-roup:
-  market:
-    max-resale-multiplier: ${ROUP_MAX_RESALE_MULTIPLIER:1.2}

@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { useAuth, useNavigate } from './appContext.js';
-import ThemeToggle from './ThemeToggle.jsx';
-import { signIn, signUp } from './authService.js';
-import './auth.css';
+import { useAuth, useNavigate } from '../store/appContext.js';
+import ThemeToggle from '../components/ui/ThemeToggle.jsx';
+import { signIn, signUp } from '../api/authService.js';
+import '../styles/auth.css';
 
 function BrandMark() {
   return <a className="auth-brand" href="/" aria-label="Roup home"><span className="brand-mark" aria-hidden="true"><i /><i /><i /><i /></span><span>roup<span>.</span></span></a>;

@@ -1,0 +1,23 @@
+/* Shared text scale: compact labels stay legible without enlarging display headings. */
+:root{--type-meta:12px;--type-body:15px;--type-button:14px}
+.eyebrow,.micro-label{font-size:12px!important;letter-spacing:.04em}
+.nav-pill>a:not(.nav-go),.nav-signin,.nav-account-cta{font-size:13px!important}
+.capability p,.slide-copy>p,.slide-copy li,.grid-card>p,.timeline-step p,.support-copy p,.journey-heading>p:last-child,.showcase-heading>p,.showcase-feature-copy>p{font-size:14px!important;line-height:1.65}
+.capability>a,.button,.footer-links a,.footer-legal{font-size:13px!important}
+.footer-label,.footer-note,.footer-bottom{font-size:11px!important}
+.explore-heading>.demo-label,.demo-label,.market-disclosure,.info-sidebar-foot,.pulse-unavailable p,.auctions-panel>p,.watchlist-note{font-size:12px!important;line-height:1.55}
+.explore-description,.featured-copy>p,.market-list-heading>div>p:last-child,.market-dialog>p{font-size:14px!important;line-height:1.65}
+.market-list-heading .eyebrow,.listing-category,.listing-status,.featured-item-name span,.featured-availability>span:first-child,.seller-submitted-label{font-size:11px!important}
+.listing-card-heading p,.listing-card .explore-card-description,.listing-prices span,.listing-prices b,.market-link-button,.sort-control,.sort-control select{font-size:13px!important}
+.listing-card h3{font-size:16px!important}.listing-card-foot .demo-label{font-size:11px!important}
+.panel-heading h2{font-size:16px!important}.pulse-count>span{font-size:14px!important}.pulse-count>small{font-size:12px!important}.panel-empty>b{font-size:14px!important}.panel-empty>small,.watchlist-empty>a{font-size:12px!important}
+.user-menu-name b,.user-menu-name small,.dropdown-identity b,.dropdown-identity span,.user-dropdown button{font-size:12px!important}
+.mp-eyebrow{font-size:12px!important}.mp-heading>div>p:not(.mp-eyebrow),.mp-lead,.mp-detail-panel p,.mp-disclosure{font-size:14px!important;line-height:1.6}
+.mp-metric>span,.mp-metric>small,.mp-panel-heading p,.mp-control,.mp-table th,.mp-status-badge,.mp-form label,.mp-modal-note{font-size:12px!important}
+.mp-table td,.mp-state-copy,.mp-tabs button,.mp-market-event,.mp-auction-event,.mp-owned-listing-copy>p,.mp-watch-card>div>p{font-size:14px!important}
+.mp-market-category,.mp-auction-category,.mp-market-facts span,.mp-auction-prices span,.mp-market-listing-ask span,.mp-auction-progress-label span{font-size:11px!important}
+.mp-auction-description,.mp-market-description,.mp-depth-unavailable,.mp-floor-note,.mp-chart-label,.mp-schedule-meta,.mp-schedule-list li>div>small{font-size:12px!important}
+.auth-field>label,.password-toggle,.field-error,.auth-switch,.auth-header>a:last-child,.theme-toggle,.nav-signin,.nav-signed-in,.nav-account-cta{font-size:13px!important}
+.auth-feedback,.auth-page .auth-intro>p:last-child{font-size:14px!important;line-height:1.6}
+@media(max-width:760px){.explore-description,.featured-copy>p,.mp-detail-panel p,.mp-lead{font-size:14px!important}.nav-pill>a:not(.nav-go){font-size:14px!important}}
+@media(prefers-reduced-motion:reduce){.mp-trading-card,.mp-auction-card,.mp-auction-progress i{transition:none!important}}

@@ -3,9 +3,24 @@ export const demoMarkets = [
   {
     id: 'market-north-shore-pass', itemName: '3-Day Festival Pass', eventName: 'North Shore Sessions', category: 'Festival Passes',
     description: 'Three days of music and art on the Oregon coast.', faceValue: 240, askingPrice: 284, quantity: 4, status: 'ACTIVE', demo: true, art: 'shore',
-    bestBid: 278, bestAsk: 284, orderBook: { bids: [{ price: 278, quantity: 2 }, { price: 272.5, quantity: 4 }, { price: 269, quantity: 1 }], asks: [{ price: 284, quantity: 1 }, { price: 291, quantity: 3 }, { price: 298.5, quantity: 2 }] },
+    bestBid: 278, bestAsk: 284, lastTrade: 281, orderBook: { bids: [{ price: 278, quantity: 2 }, { price: 272.5, quantity: 4 }, { price: 269, quantity: 1 }], asks: [{ price: 284, quantity: 1 }, { price: 291, quantity: 3 }, { price: 298.5, quantity: 2 }] },
+    priceHistory: [
+      { timestamp: '2026-10-19T09:00:00.000Z', price: 266, volume: 1 }, { timestamp: '2026-10-19T15:30:00.000Z', price: 270, volume: 2 },
+      { timestamp: '2026-10-20T11:15:00.000Z', price: 268, volume: 1 }, { timestamp: '2026-10-21T16:45:00.000Z', price: 276, volume: 3 },
+      { timestamp: '2026-10-22T13:20:00.000Z', price: 273, volume: 1 }, { timestamp: '2026-10-23T10:10:00.000Z', price: 279, volume: 2 },
+      { timestamp: '2026-10-24T17:05:00.000Z', price: 281, volume: 1 }, { timestamp: '2026-10-26T12:00:00.000Z', price: 281, volume: 1 },
+    ],
+    recentTrades: [
+      { id: 'sample-trade-ns-01', timestamp: '2026-10-24T17:05:00.000Z', price: 281, quantity: 1, side: 'BUY' },
+      { id: 'sample-trade-ns-02', timestamp: '2026-10-23T10:10:00.000Z', price: 279, quantity: 2, side: 'SELL' },
+    ],
+    bidAskHistory: [
+      { id: 'sample-book-ns-01', timestamp: '2026-10-26T12:00:00.000Z', side: 'BUY', price: 278, quantity: 2, event: 'Sample bid level' },
+      { id: 'sample-book-ns-02', timestamp: '2026-10-26T12:00:00.000Z', side: 'SELL', price: 284, quantity: 1, event: 'Sample ask level' },
+      { id: 'sample-book-ns-03', timestamp: '2026-10-25T12:00:00.000Z', side: 'BUY', price: 272.5, quantity: 4, event: 'Prior sample bid level' },
+    ],
   },
-  { id: 'market-afterhours-vip', itemName: 'City Lights VIP', eventName: 'Afterhours: City Lights', category: 'VIP Pass', description: 'A VIP pass for the late-night city stage.', faceValue: 185, askingPrice: 202, quantity: 1, status: 'ACTIVE', demo: true, art: 'afterhours' },
+  { id: 'market-afterhours-vip', itemName: 'City Lights VIP', eventName: 'Afterhours: City Lights', category: 'VIP Pass', description: 'A VIP pass for the late-night city stage.', faceValue: 185, askingPrice: 202, quantity: 1, status: 'ACTIVE', demo: true, art: 'afterhours', lastTrade: null },
   { id: 'market-afterglow-print', itemName: 'Afterglow Art Print', eventName: 'Objects for the Afters', category: 'Collectible', description: 'A limited edition event print, hand-finished for the collection.', faceValue: 85, askingPrice: 112, quantity: 1, status: 'ACTIVE', demo: true, art: 'afterglow' },
   { id: 'market-field-notes-tote', itemName: 'Field Notes Tote', eventName: 'Solstice: High Desert', category: 'Merchandise', description: 'A festival canvas tote from the Field Notes collection.', faceValue: 48, askingPrice: 54, quantity: 3, status: 'ACTIVE', demo: true, art: 'fieldnotes' },
   { id: 'market-artist-access', itemName: 'Artist Access Pass', eventName: 'Solstice: High Desert', category: 'VIP Pass', description: 'An artist edition pass for the High Desert grounds.', faceValue: 280, askingPrice: 320, quantity: 2, status: 'ACTIVE', demo: true, art: 'solstice' },

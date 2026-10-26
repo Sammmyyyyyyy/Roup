@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useAuth, useNavigate } from './appContext.js';
-import ThemeToggle from './ThemeToggle.jsx';
+import { useAuth, useNavigate } from '../../store/appContext.js';
+import ThemeToggle from '../ui/ThemeToggle.jsx';
 
 const iconPaths = {
   compass: <><circle cx="12" cy="12" r="9" /><path d="m15.5 8.5-2.3 4.7-4.7 2.3 2.3-4.7 4.7-2.3Z" /></>,
@@ -29,6 +29,7 @@ function SideNav({ mobileOpen, closeMobile, currentPath }) {
     ['Explore', 'compass', '/explore'],
     ['Markets', 'chart', '/markets'],
     ['Auctions', 'hammer', '/auctions'],
+    ['Watchlist', 'bookmark', '/watchlist'],
     ['My Orders', 'receipt', '/orders'],
     ['My Listings', 'tag', '/listings'],
   ];
@@ -39,10 +40,9 @@ function SideNav({ mobileOpen, closeMobile, currentPath }) {
       <div className="explore-side-top"><Brand /><span className="sidebar-product-label">SECONDARY MARKETPLACE</span></div>
       <nav className="explore-side-nav" aria-label="Marketplace sections"><span className="side-nav-label">DISCOVER</span>
         {items.map(([label, icon, href]) => {
-          const active = currentPath === href || (href === '/markets' && currentPath.startsWith('/markets/'));
+          const active = currentPath === href || (href === '/markets' && currentPath.startsWith('/markets/')) || (href === '/auctions' && currentPath.startsWith('/auctions/'));
           return <a key={href} className={`side-nav-item${active ? ' is-active' : ''}`} href={href} aria-current={active ? 'page' : undefined} onClick={(event) => { event.preventDefault(); go(href); }}><AppIcon name={icon} /><span>{label}</span>{active && <i aria-hidden="true" />}</a>;
         })}
-        <a className="side-nav-item" href="/explore#watchlist" onClick={(event) => { event.preventDefault(); go('/explore#watchlist'); }}><AppIcon name="bookmark" /><span>Watchlist</span></a>
       </nav>
       <div className="explore-sidebar-bottom"><div className="side-session-note"><span className="session-dot" /><span>Signed in as<br /><b>{session?.user?.name || session?.user?.emailId || 'Roup member'}</b></span></div>
         <ThemeToggle />
