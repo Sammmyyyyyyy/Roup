@@ -5,6 +5,7 @@ import com.backend.Auth_Svc.Dto.SigninDto;
 import com.backend.Auth_Svc.Dto.SignupDto;
 import com.backend.Auth_Svc.Dto.UserResponseDto;
 import com.backend.Auth_Svc.Service.UserService;
+import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -15,10 +16,10 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
+@AllArgsConstructor
 public class UserController {
 
-    @Autowired
-    private UserService userService;
+    private final UserService userService;
 
     @PostMapping("/signup")
     public void userSignup(@RequestBody SignupDto signupDto)
