@@ -15,6 +15,7 @@ out/
 
 # Maven build directory
 target/
+backend/Auth-Svc/data/
 
 # Gradle build directory (if applicable)
 .gradle/
@@ -26,4 +27,9 @@ Thumbs.db
 
 # Log and Environment Files
 *.log
-.env
+.env*
+!.env.example
+
+# Frontend build output
+node_modules/
+dist/

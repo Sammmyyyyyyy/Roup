@@ -1,15 +1,16 @@
 package com.backend.Auth_Svc.Dto;
 
 import com.backend.Auth_Svc.Enum.ExpertStatus;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 
-@Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Getter
+@Setter
 public class UserResponseDto {
 
     private String id;
@@ -20,9 +21,9 @@ public class UserResponseDto {
 
     private String emailId;
     private ExpertStatus expertStatus;
-    private double totalBalance;
-    private double availableBalance;
-    private double reservedBalance;
+    private BigDecimal totalBalance;
+    private BigDecimal availableBalance;
+    private BigDecimal reservedBalance;
 
     private LocalDateTime createdAt;
 

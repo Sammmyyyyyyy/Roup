@@ -14,6 +14,7 @@ import org.springframework.security.web.authentication.SimpleUrlAuthenticationSu
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Component
@@ -42,9 +43,9 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             user.setName(name);
             user.setAvatar(avatar);
             user.setExpertStatus(ExpertStatus.NOT_REGISTERED);
-            user.setTotalBalance(0.0);
-            user.setAvailableBalance(0.0);
-            user.setReservedBalance(0.0);
+            user.setTotalBalance(BigDecimal.ZERO);
+            user.setAvailableBalance(BigDecimal.ZERO);
+            user.setReservedBalance(BigDecimal.ZERO);
             user.setCreatedAt(LocalDateTime.now());
 
             userRepository.save(user);

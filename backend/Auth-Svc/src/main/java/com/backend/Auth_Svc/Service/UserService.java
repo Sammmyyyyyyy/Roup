@@ -14,6 +14,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Slf4j
@@ -44,9 +45,9 @@ public class UserService {
         user.setPassword(bCryptPasswordEncoder.encode(signupDto.getPassword()));
 
         user.setExpertStatus(ExpertStatus.NOT_REGISTERED);
-        user.setTotalBalance(0.0);
-        user.setAvailableBalance(0.0);
-        user.setReservedBalance(0.0);
+        user.setTotalBalance(BigDecimal.valueOf(0.0));
+        user.setAvailableBalance(BigDecimal.valueOf(0.0));
+        user.setReservedBalance(BigDecimal.valueOf(0.0));
         user.setCreatedAt(LocalDateTime.now());
 
         userRepository.save(user);
