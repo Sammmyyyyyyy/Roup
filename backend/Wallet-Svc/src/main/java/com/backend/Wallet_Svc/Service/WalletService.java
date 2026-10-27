@@ -21,6 +21,31 @@ public class WalletService {
     }
 
     @Transactional
+    public boolean rechargeWallet(String userId, BigDecimal amount, String refId) {
+        if (ledgerEntryRepository.existsByTransactionRef(refId)) return true; // Idempotency check
+
+        int updatedRows = userRepository.rechargeWallet(userId, amount);
+        if (updatedRows == 0) return false;
+
+        // Ledger: Money enters the system from a payment gateway into the user's available balance
+        recordLedger(refId, "SYSTEM_PAYMENT_GATEWAY", "USER_UNRESERVED_" + userId, amount);
+        return true;
+    }
+
+    // Withdraw Funds
+    @Transactional
+    public boolean withdrawFunds(String userId, BigDecimal amount, String refId) {
+        if (ledgerEntryRepository.existsByTransactionRef(refId)) return true; // Idempotency check
+
+        int updatedRows = userRepository.withdrawFromWallet(userId, amount);
+        if (updatedRows == 0) return false; // Insufficient funds
+
+        // Ledger: Money leaves the user's available balance to an external bank/withdrawal pool
+        recordLedger(refId, "USER_UNRESERVED_" + userId, "SYSTEM_BANK_WITHDRAWAL", amount);
+        return true;
+    }
+
+    @Transactional
     public boolean reserveFunds(String userId, BigDecimal amount, String refId) {
         if (ledgerEntryRepository.existsByTransactionRef(refId)) return true; // Idempotency check
 

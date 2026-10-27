@@ -16,6 +16,36 @@ public class WalletController {
         this.walletService = walletService;
     }
 
+
+    @PostMapping("/recharge")
+    public ResponseEntity<String> rechargeWallet(
+            @RequestParam String userId,
+            @RequestParam BigDecimal amount,
+            @RequestParam String refId) {
+
+        boolean success = walletService.rechargeWallet(userId, amount, refId);
+        if (success) {
+            return ResponseEntity.ok("Wallet successfully recharged.");
+        } else {
+            return ResponseEntity.badRequest().body("Wallet recharge failed.");
+        }
+    }
+
+    @PostMapping("/withdraw")
+    public ResponseEntity<String> withdrawFunds(
+            @RequestParam String userId,
+            @RequestParam BigDecimal amount,
+            @RequestParam String refId) {
+
+        boolean success = walletService.withdrawFunds(userId, amount, refId);
+        if (success) {
+            return ResponseEntity.ok("Withdrawal successful.");
+        } else {
+            return ResponseEntity.badRequest().body("Withdrawal failed: Insufficient unreserved balance.");
+        }
+    }
+
+
     // Called synchronously by Feign client to validate and reserve before queueing the bid
     @PostMapping("/reserve")
     public ResponseEntity<Boolean> reserveFunds(

@@ -31,4 +31,12 @@ public interface UserRepository extends JpaRepository<User, String> {
     @Modifying
     @Query("UPDATE User u SET u.unreservedBalance = u.unreservedBalance + :amount, u.totalBalance = u.totalBalance + :amount WHERE u.id = :userId")
     int creditSellerFunds(@Param("userId") String userId, @Param("amount") BigDecimal amount);
+
+    @Modifying
+    @Query("UPDATE User u SET u.unreservedBalance = u.unreservedBalance + :amount, u.totalBalance = u.totalBalance + :amount WHERE u.id = :userId")
+    int rechargeWallet(@Param("userId") String userId, @Param("amount") BigDecimal amount);
+
+    @Modifying
+    @Query("UPDATE User u SET u.unreservedBalance = u.unreservedBalance - :amount, u.totalBalance = u.totalBalance - :amount WHERE u.id = :userId AND u.unreservedBalance >= :amount")
+    int withdrawFromWallet(@Param("userId") String userId, @Param("amount") BigDecimal amount);
 }
