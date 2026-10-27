@@ -5,7 +5,8 @@ import java.time.Instant;
 
 public record DutchAuctionCreateRequest(
         String assetId,
-        String sellerId,
+        String assetImage,
+        String assetDiscription,
         BigDecimal startingPrice,
         BigDecimal minimumPrice,
         BigDecimal decayAmount,

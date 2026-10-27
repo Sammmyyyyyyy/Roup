@@ -18,6 +18,8 @@ public class DutchAuction {
 
     private String assetId;
     private String sellerId;
+    private String assetImage;
+    private String assetDiscription;
 
     private BigDecimal startingPrice;
     private BigDecimal minimumPrice;

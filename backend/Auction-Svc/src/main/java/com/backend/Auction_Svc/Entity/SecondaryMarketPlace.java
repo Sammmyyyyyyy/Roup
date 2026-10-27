@@ -30,7 +30,6 @@ public class SecondaryMarketPlace {
 
     private int totalOriginalQuantity;
 
-    private Map<String, Integer> purchasedUserIds = new HashMap<>();
 
     public SecondaryMarketPlace(String assetClassId, BigDecimal originalFaceValue, BigDecimal capMultiplier, int totalOriginalQuantity) {
         this.assetClassId = assetClassId;
@@ -39,9 +38,5 @@ public class SecondaryMarketPlace {
         this.maximumResalePrice = originalFaceValue.multiply(capMultiplier);
         this.isTradingActive = true;
         this.totalOriginalQuantity = totalOriginalQuantity;
-    }
-
-    public void recordPurchase(String userId, int quantity) {
-        this.purchasedUserIds.put(userId,purchasedUserIds.getOrDefault(userId,0)+quantity);
     }
 }
