@@ -1,7 +1,6 @@
 package com.backend.Wallet_Svc.Service;
 
 import com.backend.Wallet_Svc.Dto.FundReleaseEvent;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.data.redis.connection.stream.ObjectRecord;
 import org.springframework.data.redis.stream.StreamListener;
 import org.springframework.stereotype.Component;

@@ -4,6 +4,7 @@ server:
 spring:
   application:
     name: wallet-service
+
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:5432/roup_wallet
     username: ${DB_USER:postgres}

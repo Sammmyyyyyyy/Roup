@@ -1,6 +1,6 @@
 import { googleAuthorizationUrl, safeNextPath } from './oauthNavigation.js';
 
-const configuredBase = (import.meta.env.VITE_AUTH_API_BASE_URL || '').trim().replace(/\/$/, '');
+const configuredBase = (import.meta.env.VITE_AUTH_API_BASE_URL||"http://localhost:8080" || '').trim().replace(/\/$/, '');
 export const googleOAuthEnabled = import.meta.env.VITE_GOOGLE_OAUTH_ENABLED === 'true';
 
 async function postAuth(path, body) {

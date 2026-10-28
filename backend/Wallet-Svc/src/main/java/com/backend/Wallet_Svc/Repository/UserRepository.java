@@ -14,12 +14,12 @@ public interface UserRepository extends JpaRepository<User, String> {
 
     // 1. Reserve funds: Deducts from unreserved, adds to reserved
     @Modifying
-    @Query("UPDATE User u SET u.unreservedBalance = u.unreservedBalance - :amount, u.reservedBalance = u.reservedBalance + :amount WHERE u.id = :userId AND u.unreservedBalance >= :amount")
+    @Query("UPDATE User u SET u.availableBalance = u.availableBalance - :amount, u.reservedBalance = u.reservedBalance + :amount WHERE u.id = :userId AND u.availableBalance >= :amount")
     int reserveFunds(@Param("userId") String userId, @Param("amount") BigDecimal amount);
 
     // 2. Release funds: Deducts from reserved, adds to unreserved (e.g., when outbid)
     @Modifying
-    @Query("UPDATE User u SET u.reservedBalance = u.reservedBalance - :amount, u.unreservedBalance = u.unreservedBalance + :amount WHERE u.id = :userId AND u.reservedBalance >= :amount")
+    @Query("UPDATE User u SET u.reservedBalance = u.reservedBalance - :amount, u.availableBalance = u.availableBalance + :amount WHERE u.id = :userId AND u.reservedBalance >= :amount")
     int releaseReservedFunds(@Param("userId") String userId, @Param("amount") BigDecimal amount);
 
     // 3. Deduct for Escrow: Removes from reserved and total balances
@@ -29,14 +29,14 @@ public interface UserRepository extends JpaRepository<User, String> {
 
     // 4. Add funds to Seller: Adds to unreserved and total balances
     @Modifying
-    @Query("UPDATE User u SET u.unreservedBalance = u.unreservedBalance + :amount, u.totalBalance = u.totalBalance + :amount WHERE u.id = :userId")
+    @Query("UPDATE User u SET u.availableBalance = u.availableBalance + :amount, u.totalBalance = u.totalBalance + :amount WHERE u.id = :userId")
     int creditSellerFunds(@Param("userId") String userId, @Param("amount") BigDecimal amount);
 
     @Modifying
-    @Query("UPDATE User u SET u.unreservedBalance = u.unreservedBalance + :amount, u.totalBalance = u.totalBalance + :amount WHERE u.id = :userId")
+    @Query("UPDATE User u SET u.availableBalance = u.availableBalance + :amount, u.totalBalance = u.totalBalance + :amount WHERE u.id = :userId")
     int rechargeWallet(@Param("userId") String userId, @Param("amount") BigDecimal amount);
 
     @Modifying
-    @Query("UPDATE User u SET u.unreservedBalance = u.unreservedBalance - :amount, u.totalBalance = u.totalBalance - :amount WHERE u.id = :userId AND u.unreservedBalance >= :amount")
+    @Query("UPDATE User u SET u.availableBalance = u.availableBalance - :amount, u.totalBalance = u.totalBalance - :amount WHERE u.id = :userId AND u.availableBalance >= :amount")
     int withdrawFromWallet(@Param("userId") String userId, @Param("amount") BigDecimal amount);
 }

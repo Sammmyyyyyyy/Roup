@@ -5,8 +5,7 @@ import com.backend.Auction_Svc.Dto.FundReleaseEvent;
 import com.backend.Auction_Svc.Entity.DutchAuction;
 import com.backend.Auction_Svc.Repository.DutchAuctionRepository;
 import com.backend.Auction_Svc.WebSocket.AuctionWebSocketHandler;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import org.springframework.data.redis.connection.stream.ObjectRecord;
 import org.springframework.data.redis.connection.stream.StreamRecords;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -47,27 +46,23 @@ public class DutchBidStreamConsumer implements StreamListener<String, ObjectReco
             // Broadcast the winner
             webSocketHandler.broadcastUpdate(auction.getId(), "AUCTION_CLOSED_WINNER", command);
         } else {
-            try {
-                // Asynchronously release the unused reservation back to the available balance
-                FundReleaseEvent releaseEvent = new FundReleaseEvent(
-                        command.userId(),
-                        command.bidAmount(),
-                        command.refId() + "_REFUND"
-                );
+            // Asynchronously release the unused reservation back to the available balance
+            FundReleaseEvent releaseEvent = new FundReleaseEvent(
+                    command.userId(),
+                    command.bidAmount(),
+                    command.refId() + "_REFUND"
+            );
 
-                // Convert payload to a plain JSON string to bypass Spring Data Redis serializers entirely and avoid @class metadata
-                String jsonPayload = objectMapper.writeValueAsString(releaseEvent);
+            // Convert payload to a plain JSON string to bypass Spring Data Redis serializers entirely and avoid @class metadata
+            String jsonPayload = objectMapper.writeValueAsString(releaseEvent);
 
-                ObjectRecord<String, String> record = StreamRecords.newRecord()
-                        .in(FUND_RELEASE_STREAM)
-                        .ofObject(jsonPayload);
+            ObjectRecord<String, String> record = StreamRecords.newRecord()
+                    .in(FUND_RELEASE_STREAM)
+                    .ofObject(jsonPayload);
 
-                redisTemplate.opsForStream().add(record);
+            redisTemplate.opsForStream().add(record);
 
-                webSocketHandler.broadcastUpdate(command.auctionId(), "BID_REJECTED", command.userId());
-            } catch (JsonProcessingException e) {
-                throw new RuntimeException("Failed to serialize FundReleaseEvent to JSON", e);
-            }
+            webSocketHandler.broadcastUpdate(command.auctionId(), "BID_REJECTED", command.userId());
         }
     }
 }
