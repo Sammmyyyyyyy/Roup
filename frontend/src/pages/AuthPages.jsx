@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth, useNavigate } from '../store/appContext.js';
 import ThemeToggle from '../components/ui/ThemeToggle.jsx';
-import { signIn, signUp } from '../api/authService.js';
+import { beginGoogleOAuth, googleOAuthEnabled, safeNextPath, signIn, signUp } from '../api/authService.js';
 import '../styles/auth.css';
 
 function BrandMark() {
@@ -32,10 +32,29 @@ function AuthArtwork() {
   return <aside className="auth-art" aria-label="Roup exchange preview illustration">
     <div className="auth-art-glow" />
     <div className="auth-art-orbit orbit-one" /><div className="auth-art-orbit orbit-two" />
-    <div className="auth-ticket"><span>ROUP EXCHANGE <i>·</i> EXAMPLE</span><div className="auth-ticket-rings"><b>R</b></div><strong>THE<br />NEXT<br />MOMENT</strong><small>FESTIVAL PASS <i>—</i> 3 DAY</small></div>
-    <div className="auth-market-card"><div><span>ORDER BOOK <i>·</i> CONCEPT</span><b>SIMULATED</b></div><div className="auth-market-row"><span>BUY</span><i /><strong>$278</strong></div><div className="auth-market-row sell"><span>ASK</span><i /><strong>$284</strong></div><small>Illustrative interface · no live market data</small></div>
+    <div className="auth-ticket"><span>ROUP EXCHANGE</span><div className="auth-ticket-rings"><b>R</b></div><strong>THE<br />NEXT<br />MOMENT</strong><small>MARKETPLACE ACCESS</small></div>
+    <div className="auth-market-card"><div><span>MARKETPLACE</span></div><p>Market data is loaded from Roup services after sign in.</p></div>
     <div className="auth-art-caption"><span className="mint-dot" /> A marketplace for the moments that matter</div>
   </aside>;
+}
+
+function GoogleMark() {
+  return <svg className="google-mark" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.61l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5Z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.9c-.58 2.96-2.26 5.48-4.76 7.18l7.73 6C44.38 38.02 46.98 31.9 46.98 24.55Z"/><path fill="#FBBC05" d="M10.53 28.59A14.4 14.4 0 0 1 9.75 24c0-1.59.27-3.12.76-4.59l-7.98-6.19A23.9 23.9 0 0 0 0 24c0 3.87.93 7.52 2.56 10.78l7.97-6.19Z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.9-5.8l-7.73-6c-2.14 1.44-4.88 2.3-8.17 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48Z"/></svg>;
+}
+
+function GoogleSignIn({ nextPath, onError }) {
+  const [starting, setStarting] = useState(false);
+  const start = () => {
+    if (!googleOAuthEnabled || starting) return;
+    setStarting(true);
+    try { beginGoogleOAuth(nextPath); }
+    catch (error) { setStarting(false); onError(error.message); }
+  };
+  return <div className="auth-provider-section">
+    <button className="google-button" type="button" onClick={start} disabled={!googleOAuthEnabled || starting} aria-label={googleOAuthEnabled ? 'Continue with Google' : 'Google sign-in unavailable'}><GoogleMark />{starting ? 'Connecting to Google…' : googleOAuthEnabled ? 'Continue with Google' : 'Google sign-in unavailable'}</button>
+    {!googleOAuthEnabled && <p className="oauth-unavailable-note">Google sign-in isn’t configured for this Roup deployment.</p>}
+    <div className="auth-divider" aria-hidden="true">OR</div>
+  </div>;
 }
 
 function AuthFrame({ children, mode }) {
@@ -51,18 +70,13 @@ function validateEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-function safeNextPath(value) {
-  if (['/explore', '/markets', '/auctions', '/orders', '/listings'].includes(value)) return value;
-  return /^\/markets\/[a-f0-9-]+$/i.test(value || '') ? value : '/explore';
-}
-
 function LoginPage() {
   const navigate = useNavigate();
   const { authenticate } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState({});
-  const [requestError, setRequestError] = useState('');
+  const [requestError, setRequestError] = useState(() => new URLSearchParams(window.location.search).get('oauth') === 'failed' ? 'Google sign-in was not completed. You can try again or use your email and password.' : '');
   const [loading, setLoading] = useState(false);
   const [complete, setComplete] = useState(false);
 
@@ -98,6 +112,7 @@ function LoginPage() {
     {new URLSearchParams(window.location.search).has('registered') && <div className="auth-feedback success" role="status">Your account is ready. Sign in with the email and password you registered.</div>}
     {complete && <div className="auth-feedback success" role="status">You’re signed in. Returning to Roup…</div>}
     {requestError && <div className="auth-feedback error" role="alert">{requestError}</div>}
+    <GoogleSignIn nextPath={safeNextPath(new URLSearchParams(window.location.search).get('next'))} onError={setRequestError} />
     <form className="auth-form" onSubmit={submit} noValidate>
       <EmailField value={email} onChange={(event) => { setEmail(event.target.value); setErrors((current) => ({ ...current, email: '' })); }} error={errors.email} />
       <PasswordField id="password" label="Password" value={password} onChange={(event) => { setPassword(event.target.value); setErrors((current) => ({ ...current, password: '' })); }} error={errors.password} autoComplete="current-password" />
@@ -151,6 +166,7 @@ function SignupPage() {
   return <AuthFrame mode="signup"><div className="auth-intro"><p className="eyebrow">A MARKET FOR YOUR NEXT MOMENT</p><h1>Create Your<br /><span>Roup Account.</span></h1><p>Join Roup and discover a marketplace built around transparent trading, clearer pricing, and accountable transactions.</p></div>
     {created && <div className="auth-feedback success" role="status">Your account has been created. The service doesn’t sign you in automatically; continue to sign in with your new account.</div>}
     {requestError && <div className="auth-feedback error" role="alert">{requestError}</div>}
+    <GoogleSignIn nextPath={safeNext} onError={setRequestError} />
     <form className="auth-form" onSubmit={submit} noValidate>
       <div className="auth-field"><label htmlFor="fullName">Full name</label><input id="fullName" name="name" autoComplete="name" value={name} onChange={(event) => { setName(event.target.value); setErrors((current) => ({ ...current, name: '' })); }} aria-invalid={Boolean(errors.name)} aria-describedby={errors.name ? 'fullName-error' : undefined} />{errors.name && <p className="field-error" id="fullName-error">{errors.name}</p>}</div>
       <EmailField value={email} onChange={(event) => { setEmail(event.target.value); setErrors((current) => ({ ...current, email: '' })); }} error={errors.email} />

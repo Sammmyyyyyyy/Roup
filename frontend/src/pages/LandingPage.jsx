@@ -1,6 +1,7 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useNavigate } from '../store/appContext.js';
 import ThemeToggle from '../components/ui/ThemeToggle.jsx';
+import { getMarkets } from '../api/marketplaceService.js';
 const Icon = ({ name, size = 18, ...props }) => {
   const paths = {
     arrow: <><path d="M4 12h15M13 6l6 6-6 6" /></>,
@@ -37,26 +38,28 @@ function MarketLine() {
 }
 
 function OrderBook({ compact = false }) {
-  const bids = [['$278.00', '2'], ['$272.50', '4'], ['$269.00', '1']];
-  const asks = [['$284.00', '1'], ['$291.00', '3'], ['$298.50', '2']];
+  const bids = ['Best available bid', 'Open buy order', 'Queued buy order'];
+  const asks = ['Best available ask', 'Open sell order', 'Queued sell order'];
   return <div className={`orderbook${compact ? ' orderbook-compact' : ''}`}>
-    <div className="book-half"><div className="book-title"><span>BUY ORDERS</span><span>PRICE <i>·</i> QTY</span></div>{bids.map(([price, qty], i) => <div className="book-row bid" key={price} style={{ '--depth': `${79 - i * 17}%` }}><b>{price}</b><span>× {qty}</span><i /></div>)}</div>
-    <div className="book-half"><div className="book-title"><span>SELL ORDERS</span><span>PRICE <i>·</i> QTY</span></div>{asks.map(([price, qty], i) => <div className="book-row ask" key={price} style={{ '--depth': `${74 - i * 17}%` }}><b>{price}</b><span>× {qty}</span><i /></div>)}</div>
+    <div className="book-half"><div className="book-title"><span>BUY ORDERS</span><span>LIVE DEPTH</span></div>{bids.map((value, i) => <div className="book-row bid" key={value} style={{ '--depth': `${79 - i * 17}%` }}><b>{value}</b><i /></div>)}</div>
+    <div className="book-half"><div className="book-title"><span>SELL ORDERS</span><span>LIVE DEPTH</span></div>{asks.map((value, i) => <div className="book-row ask" key={value} style={{ '--depth': `${74 - i * 17}%` }}><b>{value}</b><i /></div>)}</div>
   </div>;
 }
 
 function MatchArtwork() {
+  const bids = ['Best available bid', 'Open buy order', 'Queued buy order'];
+  const asks = ['Best available ask', 'Open sell order', 'Queued sell order'];
   return <div className="match-art" aria-label="Illustration of buy and sell orders meeting under price-time rules">
-    <div className="match-stack buyers"><span className="micro-label">BUY ORDERS</span><div className="match-chip"><span>Limit · $278</span><b>01</b></div><div className="match-chip"><span>Market · best available</span><b>02</b></div><div className="match-chip"><span>Limit · $269</span><b>03</b></div></div>
+    <div className="match-stack buyers"><span className="micro-label">BUY ORDERS</span>{bids.map((bid) => <div className="match-chip" key={bid}><span>{bid}</span><b>BUY</b></div>)}</div>
     <div className="match-core"><span>PRICE<br /><i>×</i><br />TIME</span><small>MATCH ENGINE</small></div>
-    <div className="match-stack sellers"><span className="micro-label">SELL ORDERS</span><div className="match-chip"><b>01</b><span>Ask · $278</span></div><div className="match-chip"><b>02</b><span>Ask · $284</span></div><div className="match-chip"><b>03</b><span>Ask · $298</span></div></div>
+    <div className="match-stack sellers"><span className="micro-label">SELL ORDERS</span>{asks.map((ask) => <div className="match-chip" key={ask}><b>SELL</b><span>{ask}</span></div>)}</div>
   </div>;
 }
 
 function SettlementArtwork() {
   return <div className="settlement-art">
     <div className="settle-float settle-cap"><span className="micro-label">RESALE LIMIT</span><strong>1.2×</strong><small>of face value</small><div className="cap-meter"><i /></div></div>
-    <div className="settle-float settle-ledger"><span className="micro-label">TRADE RECORD</span><div><b>Debit</b><strong>− $278.00</strong></div><div><b>Credit</b><strong>+ $278.00</strong></div><span className="settle-balance"><Icon name="check" size={12} /> Balanced entry · concept</span></div>
+    <div className="settle-float settle-ledger"><span className="micro-label">TRADE RECORD</span><div><b>Buyer</b><strong>Settlement debit</strong></div><div><b>Seller</b><strong>Settlement credit</strong></div><span className="settle-balance">Ledger entries</span></div>
     <div className="settle-shield"><Icon name="shield" size={29} /><span>DELIVERY<br />VERIFIED</span></div>
     <div className="settle-connect" />
   </div>;
@@ -65,8 +68,7 @@ function SettlementArtwork() {
 function AuctionArtwork() {
   return <div className="auction-artwork">
     <div className="auction-curve"><svg viewBox="0 0 350 180" preserveAspectRatio="none" aria-hidden="true"><path d="M10 20C85 48 122 68 177 93s93 40 164 63" /><path className="auction-area" d="M10 20C85 48 122 68 177 93s93 40 164 63V180H10Z" /></svg><span className="price-dot dot-start" /><span className="price-dot dot-now" /><span className="price-dot dot-end" /></div>
-    <div className="auction-demo-card"><span className="micro-label">EXAMPLE CURRENT PRICE</span><strong>$180</strong><span className="auction-clock"><Icon name="clock" size={13} /> 03 : 42 : 18</span></div>
-    <div className="auction-axis"><span>START · $240</span><span>NOW · $180</span><span>END · $120</span></div>
+    <div className="auction-axis"><span>START</span><span>PRICE DECREASES OVER TIME</span><span>END</span></div>
   </div>;
 }
 
@@ -120,19 +122,19 @@ function FeatureCarousel() {
 function DepthVisual() {
   const left = [40, 62, 83, 51, 74, 43, 66];
   const right = [58, 77, 48, 89, 54, 70, 36];
-  return <div className="depth-visual"><div className="depth-legend"><span>BUY ORDERS <b>03</b></span><span>SELL ORDERS <b>03</b></span></div><div className="depth-viz-layout"><div className="depth-columns"><div className="depth-bars buy-bars">{left.map((v, i) => <i key={i} style={{ '--bar-size': `${v}%`, '--i': i }} />)}</div><div className="depth-mid"><span>$278</span><i /><span>$284</span><b>MID</b></div><div className="depth-bars sell-bars">{right.map((v, i) => <i key={i} style={{ '--bar-size': `${v}%`, '--i': i }} />)}</div></div><div className="depth-book"><span>PRICE</span><span>SIZE</span><span>SIDE</span><b>$278.00</b><i>2</i><em>BUY</em><b>$272.50</b><i>4</i><em>BUY</em><b>$284.00</b><i>1</i><strong>SELL</strong></div></div></div>;
+  return <div className="depth-visual"><div className="depth-legend"><span>BUY ORDERS</span><span>SELL ORDERS</span></div><div className="depth-viz-layout"><div className="depth-columns"><div className="depth-bars buy-bars">{left.map((v, i) => <i key={i} style={{ '--bar-size': `${v}%`, '--i': i }} />)}</div><div className="depth-mid"><span>BID</span><i /><span>ASK</span><b>SPREAD</b></div><div className="depth-bars sell-bars">{right.map((v, i) => <i key={i} style={{ '--bar-size': `${v}%`, '--i': i }} />)}</div></div><div className="depth-book"><span>PRICE</span><span>SIZE</span><span>SIDE</span><b>Bid level</b><i>—</i><em>BUY</em><b>Bid level</b><i>—</i><em>BUY</em><b>Ask level</b><i>—</i><strong>SELL</strong></div></div></div>;
 }
 
 function PriorityVisual() {
-  return <div className="priority-visual"><div><span>01 <i>EARLIEST AT BEST PRICE</i></span><b>$278.00</b><em>LIMIT BUY</em></div><div><span>02 <i>SAME PRICE · LATER</i></span><b>$278.00</b><em>LIMIT BUY</em></div><div><span>03 <i>LOWER PRICE</i></span><b>$272.00</b><em>LIMIT BUY</em></div><small><Icon name="spark" size={12} /> PRICE FIRST <i>→</i> TIME NEXT</small></div>;
+  return <div className="priority-visual"><div><span>01 <i>BEST PRICE</i></span><b>Open order</b><em>LIMIT BUY</em></div><div><span>02 <i>TIME PRIORITY</i></span><b>Open order</b><em>LIMIT BUY</em></div><div><span>03 <i>PRICE PRIORITY</i></span><b>Open order</b><em>LIMIT BUY</em></div><small><Icon name="spark" size={12} /> PRICE FIRST <i>→</i> TIME NEXT</small></div>;
 }
 
 function CapVisual() {
-  return <div className="cap-visual"><div className="cap-value"><span>FACE VALUE</span><b>$240</b></div><div className="cap-range"><i /><span>PERMITTED RESALE RANGE</span><b>MAX $288</b></div><div className="cap-lock"><Icon name="shield" size={15} /> 1.2× CAP</div></div>;
+  return <div className="cap-visual"><div className="cap-value"><span>FACE VALUE</span><b>Asset value</b></div><div className="cap-range"><i /><span>PERMITTED RESALE RANGE</span><b>Configured cap</b></div><div className="cap-lock"><Icon name="shield" size={15} /> PRICE LIMIT</div></div>;
 }
 
 function LedgerVisual() {
-  return <div className="ledger-visual"><div className="ledger-line"><span>TRADE DEBIT</span><b>− $278.00</b></div><div className="ledger-line"><span>SELLER CREDIT</span><b>+ $278.00</b></div><div className="ledger-balance"><Icon name="check" size={13} /> Entries balance <span>DESIGNED FLOW</span></div></div>;
+  return <div className="ledger-visual"><div className="ledger-line"><span>TRADE DEBIT</span><b>Buyer ledger</b></div><div className="ledger-line"><span>SELLER CREDIT</span><b>Seller ledger</b></div><div className="ledger-balance"><Icon name="check" size={13} /> Ledger entries</div></div>;
 }
 
 function FlowVisual() {
@@ -142,25 +144,13 @@ function FlowVisual() {
 function TicketJourney() {
   return <div className="journey-visual" data-parallax="">
     <div className="journey-glow" />
-    <div className="journey-poster"><span>LIMITED EDITION · 2025</span><strong>NORTH<br />SHORE</strong><i>SESSIONS</i><small>3-DAY FESTIVAL PASS</small><b>08—10<br />AUG</b></div>
-    <div className="journey-order journey-order-one"><span className="micro-label">BUY ORDER</span><strong>$278.00</strong><i>LIMIT · OPEN</i></div>
+    <div className="journey-poster"><span>LIMITED EDITION</span><strong>ROUP<br />EXCHANGE</strong><i>ACCESS PASS</i><small>MARKETPLACE ITEM</small></div>
+    <div className="journey-order journey-order-one"><span className="micro-label">BUY ORDER</span><strong>Order details</strong><i>LIMIT · OPEN</i></div>
     <div className="journey-order journey-order-two"><span className="micro-label">MATCHED</span><strong><Icon name="check" size={13} /> Order pair</strong><i>PRICE · TIME</i></div>
     <div className="journey-settlement"><span className="journey-settle-mark"><Icon name="ticket" size={16} /></span><div><b>Settlement record</b><small>Delivery verification · pending</small></div><span className="journey-pending">IN DESIGN</span></div>
     <div className="journey-path"><i /><i /><i /></div>
     <div className="journey-label"><span>LISTED</span><span>MATCHED</span><span>SETTLED</span></div>
   </div>;
-}
-
-function ShowcaseTicket() {
-  return <div className="showcase-ticket"><div className="showcase-ticket-grid" /><span className="showcase-overline">NORTH SHORE SESSIONS <i>·</i> 2025</span><div className="showcase-rings"><i /><i /><i /><b>NS</b></div><strong>AFTER<br />THE<br />GLOW</strong><span className="showcase-bottom">PORTLAND, OREGON <i>—</i> 3 DAY</span><span className="showcase-ticket-cut cut-top" /><span className="showcase-ticket-cut cut-bottom" /></div>;
-}
-
-function ShowcaseDepth() {
-  return <div className="mini-depth-art"><div className="mini-depth-head"><span>LEVEL 2 · EXAMPLE</span><i>SIMULATED</i></div><div className="mini-depth-price">$281.00 <small>INDICATIVE MID</small></div><div className="mini-depth-bars"><div>{[46, 68, 84, 54, 73].map((h, i) => <i key={i} style={{ '--bar-size': `${h}%` }} />)}</div><span>$278 <i /> $284</span><div>{[60, 78, 52, 90, 61].map((h, i) => <i key={i} style={{ '--bar-size': `${h}%` }} />)}</div></div><div className="mini-depth-foot"><span>BUY 3 LEVELS</span><span>SELL 3 LEVELS</span></div></div>;
-}
-
-function ContextArt() {
-  return <div className="context-art"><div className="context-ticket"><span>FESTIVAL PASS</span><b>NS<br />’25</b><i>3 DAY</i></div><div className="context-order"><span>RECENT EXAMPLE ORDER</span><b>$278.00</b><small>Limit · 1 pass</small><i><Icon name="check" size={11} /> Recorded concept</i></div><div className="context-orbit" /></div>;
 }
 
 function Navbar({ session }) {
@@ -275,7 +265,7 @@ function FeatureGrid() {
   return <section className="section grid-section" id="feature-grid" aria-labelledby="grid-title"><div className="shell"><Reveal className="center-heading grid-intro"><p className="eyebrow">ENGINEERED FOR A CLEARER EXCHANGE</p><h2 id="grid-title">The details that make<br /><span>every trade work.</span></h2><p>From price discovery to settlement, the exchange is designed around transparent rules and accountable trading.</p></Reveal>
     <div className="feature-grid">
       <article className="grid-card priority-card" data-reveal=""><div className="grid-card-heading"><span className="micro-label">01 / ORDER QUEUE</span><Icon name="clock" size={17} /></div><h3>Price-time priority</h3><p>Better-priced orders take precedence. At the same price, the earlier order is served first.</p><PriorityVisual /></article>
-      <article className="grid-card depth-card" data-reveal=""><div className="grid-card-heading"><span className="micro-label">02 / LEVEL 2 CONCEPT</span><span className="simulated-tag"><i /> SIMULATED</span></div><div className="depth-card-copy"><div><h3>Real-time market depth</h3><p>See the available buy and sell orders around a clear midpoint.</p></div><div className="depth-summary"><span>INDICATIVE MID</span><b>$281.00</b><small>illustrative only</small></div></div><DepthVisual /></article>
+      <article className="grid-card depth-card" data-reveal=""><div className="grid-card-heading"><span className="micro-label">02 / MARKET DEPTH</span></div><div className="depth-card-copy"><div><h3>Real-time market depth</h3><p>See available buy and sell orders when market data is connected.</p></div><div className="depth-summary"><span>INDICATIVE MID</span><b>Unavailable</b></div></div><DepthVisual /></article>
       <article className="grid-card cap-card" data-reveal=""><div className="grid-card-heading"><span className="micro-label">03 / PRICE PROTECTION</span><Icon name="shield" size={16} /></div><h3>Anti-scalping price caps</h3><p>Configurable resale ceilings can be set against an item's original face value.</p><CapVisual /></article>
       <article className="grid-card ledger-card" data-reveal=""><div className="grid-card-heading"><span className="micro-label">04 / TRACEABLE RECORDS</span><Icon name="ledger" size={16} /></div><h3>Atomic settlement</h3><p>Ledger architecture is designed to record both sides consistently and help prevent partial balance updates.</p><LedgerVisual /></article>
       <article className="grid-card flow-card" data-reveal=""><div className="grid-card-heading"><span className="micro-label">05 / SYSTEM DESIGN</span><Icon name="nodes" size={16} /></div><h3>Concurrency in mind</h3><p>Order processing is being designed for concurrent activity. No throughput claims are implied.</p><FlowVisual /></article>
@@ -298,9 +288,28 @@ function Journey() {
 }
 
 function Showcase() {
-  return <section className="section showcase-section" id="showcase" aria-labelledby="showcase-title"><div className="shell"><Reveal className="showcase-heading"><div><p className="eyebrow">A MARKET FOR YOUR NEXT MOMENT</p><h2 id="showcase-title">Made for the moments<br /><span>that matter.</span></h2></div><p>Discover limited-edition festival passes, event tickets, and collectibles, with a clearer view of their listed prices and availability.</p></Reveal>
-    <Reveal as="article" className="showcase-feature"><div className="showcase-feature-copy"><span className="micro-label">FEATURED EXAMPLE <i>·</i> FESTIVAL PASS</span><h3>North Shore<br />Sessions</h3><p>Three days by the water. An example listing for a pass to the late-summer festival.</p><div className="showcase-prices"><div><span>ORIGINAL FACE VALUE</span><b>$240</b></div><i /><div><span>EXAMPLE ASKING PRICE</span><b>$284</b></div></div><div className="showcase-availability"><i /> Example listing <span>·</span> Portland, OR <span>·</span> Aug 08–10</div><a className="button button-primary" href="/explore">Explore Marketplace <Icon name="arrow" size={16} /></a><small>Illustrative demo data · no live listing or activity shown</small></div><div className="showcase-feature-art"><ShowcaseTicket /></div></Reveal>
-    <div className="showcase-support"><Reveal as="article" className="support-card"><div className="support-copy"><span className="micro-label">MARKET CONTEXT <i>·</i> SIMULATED</span><h3>See the market clearly.</h3><p>Understand the relationship between available buy and sell orders.</p></div><ShowcaseDepth /></Reveal><Reveal as="article" className="support-card support-card-context" delay={90}><div className="support-copy"><span className="micro-label">A TRADE, MADE TRACEABLE</span><h3>Trade with better context.</h3><p>Keep item information, pricing context, and transaction activity easier to understand.</p></div><ContextArt /></Reveal></div>
+  const [markets, setMarkets] = useState([]);
+  const [status, setStatus] = useState('loading');
+
+  useEffect(() => {
+    let current = true;
+    getMarkets().then((items) => {
+      if (!current) return;
+      setMarkets(Array.isArray(items) ? items : []);
+      setStatus('ready');
+    }).catch(() => { if (current) setStatus('unavailable'); });
+    return () => { current = false; };
+  }, []);
+
+  return <section className="section showcase-section" id="showcase" aria-labelledby="showcase-title"><div className="shell">
+    <Reveal className="showcase-heading"><div><p className="eyebrow">A MARKET FOR YOUR NEXT MOMENT</p><h2 id="showcase-title">Made for the moments<br /><span>that matter.</span></h2></div><p>Discover what’s available across the Roup marketplace.</p></Reveal>
+      <div className={`showcase-activity${status === 'ready' && markets.length ? ' has-markets' : ''}`} aria-live="polite">
+      <div className="showcase-activity-copy"><span className={`showcase-activity-status${status === 'ready' && markets.length ? ' is-live' : ''}`}><i />{status === 'loading' ? 'Checking availability' : status === 'unavailable' ? 'Marketplace unavailable' : markets.length ? 'Available now' : 'No active markets yet'}</span>
+        <p>{status === 'unavailable' ? 'Marketplace activity isn’t available right now. Please try again later.' : status === 'ready' && !markets.length ? 'New markets will appear here when they become available.' : markets.length ? `${markets.length} active ${markets.length === 1 ? 'market' : 'markets'} on Roup.` : 'Explore live marketplace activity and current availability.'}</p>
+      </div>
+        {status === 'ready' && markets.length > 0 && <div className="showcase-activity-items">{markets.slice(0, 3).map((market) => <a className="showcase-activity-item" key={market.assetId} href={`/markets/${encodeURIComponent(market.assetId)}`}><span>{market.assetName || 'Unnamed asset'}</span><small>{market.isTradingActive ? 'Trading active' : 'Trading inactive'}</small></a>)}</div>}
+      <a className="button button-primary" href="/explore">Explore Marketplace <Icon name="arrow" size={16} /></a>
+    </div>
   </div></section>;
 }
 
@@ -309,7 +318,7 @@ function Footer() {
     { title: 'EXPLORE', links: [['Marketplace', '#showcase'], ['Markets', '#feature-grid'], ['How It Works', '#journey']] },
     { title: 'THE EXCHANGE', links: [['Features', '#capabilities'], ['Auctions', '#feature-carousel'], ['Trust & Safety', '#feature-grid']] },
   ];
-  return <footer className="site-footer" id="footer"><div className="shell footer-top"><div className="footer-brand-block"><Brand /><p>A secondary marketplace for limited-edition passes and collectibles.</p><span className="footer-note"><i /> A market for the moments that matter</span></div><div className="footer-links">{footerGroups.map((group) => <div key={group.title}><span className="footer-label">{group.title}</span>{group.links.map(([label, href]) => <a href={href} key={label}>{label}</a>)}</div>)}<div><span className="footer-label">ROUP EXCHANGE</span><span className="footer-legal">Terms &amp; Privacy</span><span className="footer-legal">Contact details coming soon</span></div></div></div><div className="shell footer-bottom"><span>© 2026 Roup Exchange</span><span>Prices and market information are illustrative</span><a href="#top">Back to top ↑</a></div><div className="footer-wordmark-wrap" data-reveal=""><div className="footer-wordmark" aria-hidden="true">Roup</div></div></footer>;
+  return <footer className="site-footer" id="footer"><div className="shell footer-top"><div className="footer-brand-block"><Brand /><p>A secondary marketplace for limited-edition passes and collectibles.</p><span className="footer-note"><i /> A market for the moments that matter</span></div><div className="footer-links">{footerGroups.map((group) => <div key={group.title}><span className="footer-label">{group.title}</span>{group.links.map(([label, href]) => <a href={href} key={label}>{label}</a>)}</div>)}<div><span className="footer-label">ROUP EXCHANGE</span><span className="footer-legal">Terms &amp; Privacy</span><span className="footer-legal">Contact details coming soon</span></div></div></div><div className="shell footer-bottom"><span>© 2026 Roup Exchange</span><span>Market details load from connected services</span><a href="#top">Back to top ↑</a></div><div className="footer-wordmark-wrap" data-reveal=""><div className="footer-wordmark" aria-hidden="true">Roup</div></div></footer>;
 }
 
 export default function LandingPage({ session, notice, onDismissNotice }) {
