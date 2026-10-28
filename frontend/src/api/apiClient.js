@@ -1,4 +1,4 @@
-const baseUrl = (import.meta.env.VITE_API_BASE_URL || '').trim().replace(/\/$/, '');
+const baseUrl = (import.meta.env.VITE_API_BASE_URL || "http://localhost:8080"||  '').trim().replace(/\/$/, '');
 
 // Path alternate pairs for gateway vs direct service compatibility
 const alternatePaths = [

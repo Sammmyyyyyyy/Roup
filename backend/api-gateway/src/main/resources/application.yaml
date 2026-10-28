@@ -11,106 +11,107 @@ spring:
 
   cloud:
     gateway:
-      globalcors:
-        cors-configurations:
-          '[/**]':
-            allowedOrigins:
-              - "http://localhost:5173"
-              - "https://khushi-2006yadav.github.io/Arovia"
-            allowedMethods: "*"
-            allowedHeaders: "*"
-            allowCredentials: true
+      server:
+        webflux:
+          globalcors:
+            cors-configurations:
+              '[/**]':
+                allowedOrigins:
+                  - "http://localhost:5173"
+                  - "https://khushi-2006yadav.github.io/Arovia"
+                allowedMethods: "*"
+                allowedHeaders: "*"
+                allowCredentials: true
 
-      routes:
-        # --- Auth Route ---
-        - id: auth-route
-          uri: lb://auth-service
-          predicates:
-            - Path=/api/signup/**, /api/signin/**, /api/oauth-signin, /oauth2/**, /login/**
-          filters:
-            - name: CircuitBreaker
-              args:
-                name: authCircuitBreaker
-                fallbackUri: forward:/fallback/auth
-            - name: RequestRateLimiter
-              args:
-                redis-rate-limiter.replenishRate: 5      # 5 tokens/sec (prevents brute-force)
-                redis-rate-limiter.burstCapacity: 10
-                redis-rate-limiter.requestedTokens: 1
-                key-resolver: "#{@ipKeyResolver}"
+          routes:
+            - id: auth-route
+              uri: lb://auth-service
+              predicates:
+                - Path=/api/signup,/api/signin,/api/oauth-signin,/api/oauth-signup,/oauth2/**,/login/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: authCircuitBreaker
+                    fallbackUri: forward:/fallback/auth
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 5
+                    redis-rate-limiter.burstCapacity: 10
+                    redis-rate-limiter.requestedTokens: 1
+                    key-resolver: "#{@ipKeyResolver}"
 
-        # --- User Route ---
-        - id: user-route
-          uri: lb://user-service
-          predicates:
-            - Path=/api/v1/users/**
-          filters:
-            - name: CircuitBreaker
-              args:
-                name: userCircuitBreaker
-                fallbackUri: forward:/fallback/user
-            - name: RequestRateLimiter
-              args:
-                redis-rate-limiter.replenishRate: 20
-                redis-rate-limiter.burstCapacity: 40
-                redis-rate-limiter.requestedTokens: 1
-                key-resolver: "#{@ipKeyResolver}"
+            - id: user-route
+              uri: lb://user-service
+              predicates:
+                - Path=/api/users/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: userCircuitBreaker
+                    fallbackUri: forward:/fallback/user
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 20
+                    redis-rate-limiter.burstCapacity: 40
+                    redis-rate-limiter.requestedTokens: 1
+                    key-resolver: "#{@ipKeyResolver}"
 
-        # --- Wallet Route ---
-        - id: wallet-route
-          uri: lb://wallet-service
-          predicates:
-            - Path=/api/v1/wallet/**
-          filters:
-            - name: CircuitBreaker
-              args:
-                name: walletCircuitBreaker
-                fallbackUri: forward:/fallback/wallet
-            - name: RequestRateLimiter
-              args:
-                redis-rate-limiter.replenishRate: 15
-                redis-rate-limiter.burstCapacity: 30
-                redis-rate-limiter.requestedTokens: 1
-                key-resolver: "#{@ipKeyResolver}"
+            - id: wallet-route
+              uri: lb://wallet-service
+              predicates:
+                - Path=/api/wallet/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: walletCircuitBreaker
+                    fallbackUri: forward:/fallback/wallet
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 15
+                    redis-rate-limiter.burstCapacity: 30
+                    redis-rate-limiter.requestedTokens: 1
+                    key-resolver: "#{@ipKeyResolver}"
 
-        # --- Auction Route ---
-        - id: auction-route
-          uri: lb://auction-service
-          predicates:
-            - Path=/api/v1/auctions/**
-          filters:
-            - name: CircuitBreaker
-              args:
-                name: auctionCircuitBreaker
-                fallbackUri: forward:/fallback/auction
-            - name: RequestRateLimiter
-              args:
-                redis-rate-limiter.replenishRate: 50     # Higher for auction queries
-                redis-rate-limiter.burstCapacity: 100
-                redis-rate-limiter.requestedTokens: 1
-                key-resolver: "#{@ipKeyResolver}"
+            - id: auction-route
+              uri: lb://auction-service
+              predicates:
+                - Path=/api/auctions/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: auctionCircuitBreaker
+                    fallbackUri: forward:/fallback/auction
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 50
+                    redis-rate-limiter.burstCapacity: 100
+                    redis-rate-limiter.requestedTokens: 1
+                    key-resolver: "#{@ipKeyResolver}"
 
-        # --- Orders Route ---
-        - id: orders-route
-          uri: lb://orders-service
-          predicates:
-            - Path=/api/v1/orders/**
-          filters:
-            - name: CircuitBreaker
-              args:
-                name: ordersCircuitBreaker
-                fallbackUri: forward:/fallback/orders
-            - name: RequestRateLimiter
-              args:
-                redis-rate-limiter.replenishRate: 15
-                redis-rate-limiter.burstCapacity: 30
-                redis-rate-limiter.requestedTokens: 1
-                key-resolver: "#{@ipKeyResolver}"
+            - id: orders-route
+              uri: lb://orders-service
+              predicates:
+                - Path=/api/orders/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: ordersCircuitBreaker
+                    fallbackUri: forward:/fallback/orders
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 15
+                    redis-rate-limiter.burstCapacity: 30
+                    redis-rate-limiter.requestedTokens: 1
+                    key-resolver: "#{@ipKeyResolver}"
 
 eureka:
   client:
     service-url:
       defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+
+# resilience4j: and jwt: blocks unchanged
 
 # Resilience4j Global Defaults + Route Instances
 resilience4j:

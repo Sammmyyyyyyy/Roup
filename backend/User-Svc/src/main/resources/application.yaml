@@ -18,6 +18,7 @@ eureka:
     service-url:
       defaultZone: http://${EUREKA_HOST:localhost}:8761/eureka/
   instance:
+    prefer-ip-address: true
     instance-id: ${spring.application.name}:${random.uuid}
 
 # Feign Client configuration for synchronous internal calls
