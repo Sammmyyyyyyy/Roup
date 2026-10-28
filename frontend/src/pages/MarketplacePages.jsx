@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import AppShell, { AppIcon } from '../components/layout/AppShell.jsx';
 import { useAuth, useNavigate } from '../store/appContext.js';
 import {
@@ -22,6 +22,7 @@ import {
   saveOrder,
   toggleWatchlist,
 } from '../utils/orderStorage.js';
+import { useAuctionLiveUpdates, useMarketOrderBook } from '../api/webSocketService.js';
 import '../styles/marketplacePages.css';
 
 const decode = (value) => {
@@ -98,6 +99,435 @@ function useRemote(load, key) {
   }, [key]);
 
   return { data, state, error, refresh, setData };
+}
+
+// ==========================================
+// LIVE WEBSOCKET ORDER BOOK & DEPTH CHART
+// ==========================================
+
+function LiveOrderBookDepth({ marketId, faceValue, maxPrice }) {
+  const { orderBook, isConnected } = useMarketOrderBook(marketId);
+
+  // Sort bids descending (highest buy offer first)
+  const sortedBids = useMemo(() => {
+    return [...(orderBook.bids || [])].sort((a, b) => Number(b.price) - Number(a.price));
+  }, [orderBook.bids]);
+
+  // Sort asks ascending (lowest sell offer first)
+  const sortedAsks = useMemo(() => {
+    return [...(orderBook.asks || [])].sort((a, b) => Number(a.price) - Number(b.price));
+  }, [orderBook.asks]);
+
+  const bestBid = sortedBids[0]?.price ? Number(sortedBids[0].price) : null;
+  const bestAsk = sortedAsks[0]?.price ? Number(sortedAsks[0].price) : null;
+  const spread = bestBid && bestAsk ? Math.max(0, bestAsk - bestBid) : null;
+
+  const maxBidQty = Math.max(1, ...sortedBids.map((b) => Number(b.volume ?? b.quantity) || 1));
+  const maxAskQty = Math.max(1, ...sortedAsks.map((a) => Number(a.volume ?? a.quantity) || 1));
+
+  // Compute SVG depth coordinates
+  const depthSvg = useMemo(() => {
+    const width = 500;
+    const height = 140;
+
+    let totalBidVolume = 0;
+    const cumBids = sortedBids.map((b) => {
+      totalBidVolume += Number(b.volume ?? b.quantity) || 0;
+      return { price: Number(b.price), cumQty: totalBidVolume };
+    });
+
+    let totalAskVolume = 0;
+    const cumAsks = sortedAsks.map((a) => {
+      totalAskVolume += Number(a.volume ?? a.quantity) || 0;
+      return { price: Number(a.price), cumQty: totalAskVolume };
+    });
+
+    const maxCum = Math.max(1, totalBidVolume, totalAskVolume);
+
+    // Build SVG polygons
+    // Bids fill from left to center
+    let bidPoints = `0,${height} `;
+    if (cumBids.length > 0) {
+      cumBids.forEach((cb, idx) => {
+        const x = (idx / cumBids.length) * 235;
+        const y = height - (cb.cumQty / maxCum) * (height - 20);
+        bidPoints += `${x},${y} `;
+      });
+      bidPoints += `235,${height - (totalBidVolume / maxCum) * (height - 20)} 235,${height}`;
+    } else {
+      bidPoints = `0,${height} 235,${height}`;
+    }
+
+    // Asks fill from center to right
+    let askPoints = `265,${height} `;
+    if (cumAsks.length > 0) {
+      cumAsks.forEach((ca, idx) => {
+        const x = 265 + (idx / cumAsks.length) * 235;
+        const y = height - (ca.cumQty / maxCum) * (height - 20);
+        askPoints += `${x},${y} `;
+      });
+      askPoints += `${width},${height - (totalAskVolume / maxCum) * (height - 20)} ${width},${height}`;
+    } else {
+      askPoints = `265,${height} ${width},${height}`;
+    }
+
+    return { width, height, bidPoints, askPoints, maxCum };
+  }, [sortedBids, sortedAsks]);
+
+  return (
+    <article className="mp-panel" style={{ marginTop: '18px', overflow: 'hidden' }}>
+      <div className="mp-panel-heading" style={{ flexWrap: 'wrap', gap: '8px' }}>
+        <div>
+          <h2>Live Market Depth &amp; Order Book</h2>
+          <p>Real-time order book broadcast from MatchingEngine via /ws/markets</p>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span
+            className={`mp-status-badge ${isConnected ? 'status-active' : 'status-paused'}`}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+          >
+            <span
+              style={{
+                width: '7px',
+                height: '7px',
+                borderRadius: '50%',
+                background: isConnected ? 'var(--mint)' : '#888',
+                boxShadow: isConnected ? '0 0 8px rgba(75,226,160,.8)' : 'none',
+              }}
+            />
+            {isConnected ? 'WebSocket Connected' : 'Connecting WS…'}
+          </span>
+        </div>
+      </div>
+
+      <div style={{ padding: '20px' }}>
+        {/* Best Bid / Spread / Best Ask Banner */}
+        <div className="mp-best-pair" style={{ marginBottom: '18px', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+          <div style={{ padding: '12px 14px', borderRadius: '8px', background: 'rgba(75,226,160,.06)', border: '1px solid rgba(75,226,160,.18)' }}>
+            <span style={{ color: 'var(--muted)', fontSize: '11px' }}>BEST BUY BID</span>
+            <strong style={{ fontSize: '20px', color: 'var(--mint)', display: 'block', marginTop: '2px' }}>
+              {bestBid ? `$${bestBid.toFixed(2)}` : 'None'}
+            </strong>
+            <small style={{ color: 'var(--quiet)' }}>Highest buyer offer</small>
+          </div>
+
+          <div style={{ padding: '12px 14px', borderRadius: '8px', background: 'var(--panel-light)', border: '1px solid var(--line)', textAlign: 'center' }}>
+            <span style={{ color: 'var(--muted)', fontSize: '11px' }}>SPREAD</span>
+            <strong style={{ fontSize: '20px', color: 'var(--text)', display: 'block', marginTop: '2px' }}>
+              {spread !== null ? `$${spread.toFixed(2)}` : 'N/A'}
+            </strong>
+            <small style={{ color: 'var(--quiet)' }}>Bid-Ask Delta</small>
+          </div>
+
+          <div style={{ padding: '12px 14px', borderRadius: '8px', background: 'rgba(193,164,107,.06)', border: '1px solid rgba(193,164,107,.18)', textAlign: 'right' }}>
+            <span style={{ color: 'var(--muted)', fontSize: '11px' }}>BEST SELL ASK</span>
+            <strong style={{ fontSize: '20px', color: '#c1a46b', display: 'block', marginTop: '2px' }}>
+              {bestAsk ? `$${bestAsk.toFixed(2)}` : 'None'}
+            </strong>
+            <small style={{ color: 'var(--quiet)' }}>Lowest seller ask</small>
+          </div>
+        </div>
+
+        {/* Real-Time SVG Depth Chart */}
+        <div style={{ margin: '14px 0 20px', padding: '14px', borderRadius: '8px', background: 'var(--panel-light)', border: '1px solid var(--line)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '11px', color: 'var(--muted)' }}>
+            <span style={{ color: 'var(--mint)', fontWeight: '600' }}>◀ Cumulative Buy Depth</span>
+            <span>Real-Time Depth Curve</span>
+            <span style={{ color: '#c1a46b', fontWeight: '600' }}>Cumulative Sell Depth ▶</span>
+          </div>
+
+          <svg
+            viewBox={`0 0 ${depthSvg.width} ${depthSvg.height}`}
+            style={{ width: '100%', height: '140px', overflow: 'hidden' }}
+            preserveAspectRatio="none"
+          >
+            <defs>
+              <linearGradient id="bidGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#4be2a0" stopOpacity="0.4" />
+                <stop offset="100%" stopColor="#4be2a0" stopOpacity="0.05" />
+              </linearGradient>
+              <linearGradient id="askGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#c1a46b" stopOpacity="0.4" />
+                <stop offset="100%" stopColor="#c1a46b" stopOpacity="0.05" />
+              </linearGradient>
+            </defs>
+
+            {/* Center Midline */}
+            <line x1="250" y1="0" x2="250" y2={depthSvg.height} stroke="var(--line-hi)" strokeDasharray="3 3" />
+
+            {/* Bid Polygon */}
+            <polygon points={depthSvg.bidPoints} fill="url(#bidGrad)" stroke="#4be2a0" strokeWidth="1.5" />
+
+            {/* Ask Polygon */}
+            <polygon points={depthSvg.askPoints} fill="url(#askGrad)" stroke="#c1a46b" strokeWidth="1.5" />
+          </svg>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', fontSize: '10px', color: 'var(--quiet)' }}>
+            <span>Face Value: ${faceValue ?? '0'}</span>
+            <span>Midmarket: {bestBid && bestAsk ? `$${((bestBid + bestAsk) / 2).toFixed(2)}` : 'Awaiting Bids'}</span>
+            <span>Resale Cap: ${maxPrice ?? 'N/A'}</span>
+          </div>
+        </div>
+
+        {/* Live Order Book Ladder Columns */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          {/* BIDS */}
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '6px', borderBottom: '1px solid var(--line)', fontSize: '11px', color: 'var(--quiet)', fontWeight: '600' }}>
+              <span>BUY PRICE</span>
+              <span>VOLUME</span>
+            </div>
+            {sortedBids.length === 0 ? (
+              <p style={{ padding: '16px 0', fontSize: '12px', color: 'var(--quiet)', textAlign: 'center' }}>
+                No active buy bids in order book.
+              </p>
+            ) : (
+              <div style={{ display: 'grid', gap: '4px', marginTop: '6px' }}>
+                {sortedBids.slice(0, 8).map((b, idx) => {
+                  const qty = Number(b.volume ?? b.quantity) || 0;
+                  const pct = Math.min(100, (qty / maxBidQty) * 100);
+                  return (
+                    <div
+                      key={idx}
+                      style={{
+                        position: 'relative',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        padding: '6px 8px',
+                        fontSize: '12px',
+                        borderRadius: '4px',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      <span
+                        style={{
+                          position: 'absolute',
+                          right: 0,
+                          top: 0,
+                          bottom: 0,
+                          width: `${pct}%`,
+                          background: 'rgba(75,226,160,.12)',
+                          zIndex: 0,
+                        }}
+                      />
+                      <b style={{ color: 'var(--mint)', position: 'relative', zIndex: 1 }}>
+                        ${Number(b.price).toFixed(2)}
+                      </b>
+                      <span style={{ color: 'var(--text)', position: 'relative', zIndex: 1, fontFamily: 'var(--mono)' }}>
+                        {qty}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* ASKS */}
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '6px', borderBottom: '1px solid var(--line)', fontSize: '11px', color: 'var(--quiet)', fontWeight: '600' }}>
+              <span>SELL PRICE</span>
+              <span>VOLUME</span>
+            </div>
+            {sortedAsks.length === 0 ? (
+              <p style={{ padding: '16px 0', fontSize: '12px', color: 'var(--quiet)', textAlign: 'center' }}>
+                No active sell asks in order book.
+              </p>
+            ) : (
+              <div style={{ display: 'grid', gap: '4px', marginTop: '6px' }}>
+                {sortedAsks.slice(0, 8).map((a, idx) => {
+                  const qty = Number(a.volume ?? a.quantity) || 0;
+                  const pct = Math.min(100, (qty / maxAskQty) * 100);
+                  return (
+                    <div
+                      key={idx}
+                      style={{
+                        position: 'relative',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        padding: '6px 8px',
+                        fontSize: '12px',
+                        borderRadius: '4px',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      <span
+                        style={{
+                          position: 'absolute',
+                          left: 0,
+                          top: 0,
+                          bottom: 0,
+                          width: `${pct}%`,
+                          background: 'rgba(193,164,107,.12)',
+                          zIndex: 0,
+                        }}
+                      />
+                      <b style={{ color: '#c1a46b', position: 'relative', zIndex: 1 }}>
+                        ${Number(a.price).toFixed(2)}
+                      </b>
+                      <span style={{ color: 'var(--text)', position: 'relative', zIndex: 1, fontFamily: 'var(--mono)' }}>
+                        {qty}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+// ==========================================
+// LIVE DUTCH AUCTION DECAY CHART & WEBSOCKET STREAM
+// ==========================================
+
+function LiveAuctionDecayChart({ auction }) {
+  const { latestEvent, isConnected } = useAuctionLiveUpdates(auction.id);
+
+  // Real-time ticking time to compute decay progression
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const startingPrice = Number(auction.startingPrice || 250);
+  const minPrice = Number(auction.minimumPrice || 50);
+
+  // Dynamic live decayed price computed from schedule and intervals
+  const currentPrice = useMemo(() => {
+    if (latestEvent?.type === 'AUCTION_CLOSED_WINNER' && latestEvent.payload?.bidAmount) {
+      return Number(latestEvent.payload.bidAmount);
+    }
+    const basePrice = Number(auction.currentPrice ?? startingPrice);
+    if (!auction.isActive || !auction.startTime || !auction.decayAmount || !auction.decayIntervalSeconds) {
+      return basePrice;
+    }
+    const startMs = new Date(auction.startTime).getTime();
+    if (isNaN(startMs)) return basePrice;
+    const elapsedSec = Math.max(0, (now - startMs) / 1000);
+    const intervals = Math.floor(elapsedSec / Number(auction.decayIntervalSeconds));
+    const totalDecay = intervals * Number(auction.decayAmount);
+    return Math.max(minPrice, startingPrice - totalDecay);
+  }, [auction, startingPrice, minPrice, now, latestEvent]);
+
+  // Calculate curve visual coordinates
+  const chartSvg = useMemo(() => {
+    const width = 500;
+    const height = 150;
+    const range = Math.max(1, startingPrice - minPrice);
+    const progress = Math.max(0, Math.min(1, (startingPrice - currentPrice) / range));
+    const currentX = 20 + progress * 460;
+    const currentY = 20 + progress * 100;
+
+    return { width, height, currentX, currentY };
+  }, [startingPrice, currentPrice, minPrice]);
+
+  return (
+    <div style={{ marginTop: '16px' }}>
+      {/* Live WebSocket Event Notification */}
+      {latestEvent && (
+        <div
+          style={{
+            padding: '12px 16px',
+            borderRadius: '8px',
+            marginBottom: '16px',
+            border: `1px solid ${latestEvent.type === 'AUCTION_CLOSED_WINNER' ? 'rgba(75,226,160,.4)' : 'rgba(207,128,120,.4)'}`,
+            background: latestEvent.type === 'AUCTION_CLOSED_WINNER' ? 'rgba(75,226,160,.1)' : 'rgba(207,128,120,.1)',
+            color: latestEvent.type === 'AUCTION_CLOSED_WINNER' ? 'var(--mint)' : '#cf8078',
+            fontSize: '13px',
+          }}
+          role="status"
+        >
+          <b>Live Stream Event:</b>{' '}
+          {latestEvent.type === 'AUCTION_CLOSED_WINNER'
+            ? `Auction Winner Declared! Buyer: ${latestEvent.payload?.userId || 'Confirmed'} at $${latestEvent.payload?.bidAmount || currentPrice}`
+            : `Bid Update: ${latestEvent.type}`}
+        </div>
+      )}
+
+      {/* Real-Time Price Decay SVG Chart */}
+      <div className="mp-auction-chart">
+        <div className="mp-chart-head">
+          <div>
+            <p className="mp-eyebrow">LIVE DUTCH AUCTION DECAY</p>
+            <b>Descending Price Curve</b>
+          </div>
+          <span
+            className={`mp-status-badge ${isConnected ? 'status-active' : 'status-paused'}`}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+          >
+            <span
+              style={{
+                width: '6px',
+                height: '6px',
+                borderRadius: '50%',
+                background: isConnected ? 'var(--mint)' : '#888',
+                boxShadow: isConnected ? '0 0 6px rgba(75,226,160,.8)' : 'none',
+              }}
+            />
+            {isConnected ? 'Live WS Connected' : 'Connecting WS…'}
+          </span>
+        </div>
+
+        <svg viewBox="0 0 500 150" style={{ width: '100%', height: '140px' }} preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="auctionDecayGlow" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="var(--mint)" stopOpacity="0.25" />
+              <stop offset="100%" stopColor="var(--mint)" stopOpacity="0.0" />
+            </linearGradient>
+          </defs>
+
+          {/* Grid lines */}
+          <line x1="20" y1="20" x2="480" y2="20" className="mp-chart-gridline" />
+          <line x1="20" y1="70" x2="480" y2="70" className="mp-chart-gridline" />
+          <line x1="20" y1="120" x2="480" y2="120" className="mp-chart-gridline" />
+
+          {/* Fill area */}
+          <path
+            d="M20 20 C180 35, 320 85, 480 120 L480 150 L20 150 Z"
+            fill="url(#auctionDecayGlow)"
+          />
+
+          {/* Curve */}
+          <path
+            d="M20 20 C180 35, 320 85, 480 120"
+            className="mp-chart-line"
+          />
+
+          {/* Start point */}
+          <circle cx="20" cy="20" r="4" className="mp-chart-point" />
+
+          {/* End/Floor point */}
+          <circle cx="480" cy="120" r="4" className="mp-chart-point" />
+
+          {/* Moving Current Price indicator */}
+          <line
+            x1={chartSvg.currentX}
+            y1="10"
+            x2={chartSvg.currentX}
+            y2="140"
+            className="mp-chart-marker-line"
+          />
+          <circle
+            cx={chartSvg.currentX}
+            cy={chartSvg.currentY}
+            r="6"
+            className="mp-chart-current"
+          />
+        </svg>
+
+        <div className="mp-chart-ends" style={{ fontSize: '11px', marginTop: '6px' }}>
+          <span>Start: ${startingPrice.toFixed(2)}</span>
+          <span style={{ color: 'var(--mint)', fontWeight: '600' }}>Current Ask: ${currentPrice.toFixed(2)}</span>
+          <span>Reserve Floor: ${minPrice.toFixed(2)}</span>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // ==========================================
@@ -219,7 +649,7 @@ export function MarketsPage({ path = '/markets' }) {
           title={id ? (market?.assetName || 'Market details') : 'Secondary Markets'}
           description={
             id
-              ? 'Market configuration, live book details, and order placement powered by Auction-Svc.'
+              ? 'Real-time order depth chart via WebSocket and order execution powered by Auction-Svc.'
               : 'Browse active secondary markets, trade with price caps, or create a new market.'
           }
           actions={
@@ -283,7 +713,7 @@ export function MarketsPage({ path = '/markets' }) {
                       type="button"
                       onClick={() => navigate(`/markets/${encodeURIComponent(m.assetId)}`)}
                     >
-                      Trade &amp; Details →
+                      Trade &amp; Live Depth →
                     </button>
                     <button
                       className={`mp-watch-button ${isWatchlisted(m.assetId) ? 'is-saved' : ''}`}
@@ -356,6 +786,13 @@ export function MarketsPage({ path = '/markets' }) {
                   </div>
                 </div>
               </article>
+
+              {/* LIVE WEBSOCKET DEPTH CHART */}
+              <LiveOrderBookDepth
+                marketId={id}
+                faceValue={market.originalFaceValue}
+                maxPrice={market.maximumResalePrice}
+              />
             </div>
 
             {/* ORDER PLACEMENT PANEL */}
@@ -801,7 +1238,7 @@ export function AuctionsPage({ path = '/auctions' }) {
           title={id ? (auction?.assetName || 'Auction details') : 'Dutch Auctions'}
           description={
             id
-              ? 'Real-time descending price auction managed by Auction-Svc.'
+              ? 'Real-time descending price auction and live stream events managed by Auction-Svc.'
               : 'Auctions decrease in price at regular intervals until a buyer accepts or the reserve is reached.'
           }
           actions={
@@ -957,6 +1394,9 @@ export function AuctionsPage({ path = '/auctions' }) {
                   </div>
                 </div>
               </article>
+
+              {/* LIVE WEBSOCKET AUCTION DECAY CHART */}
+              <LiveAuctionDecayChart auction={auction} />
             </div>
 
             {/* BID ACCEPTANCE PANEL */}
