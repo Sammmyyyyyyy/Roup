@@ -35,6 +35,7 @@ public class GatewaySecurityConfig {
                                 "/api/oauth-signup",
                                 "/oauth2/**",
                                 "/login/**",
+                                "/ws/**",
                                 "/fallback/**"
                         ).permitAll()
                         .anyExchange().authenticated()

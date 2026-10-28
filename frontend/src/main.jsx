@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import './styles/globals.css';
+import './styles/explore.css';
 import AuthPages from './pages/AuthPages.jsx';
 import { AuthContext, NavigationContext, ThemeContext } from './store/appContext.js';
 import ExplorePage from './pages/ExplorePage.jsx';

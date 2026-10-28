@@ -4,17 +4,17 @@ import com.backend.Auction_Svc.Client.WalletClient;
 import com.backend.Auction_Svc.Dto.DutchAuctionCreateRequest;
 import com.backend.Auction_Svc.Dto.DutchAuctionResponse;
 import com.backend.Auction_Svc.Dto.DutchAuctionUpdateRequest;
-import com.backend.Auction_Svc.Dto.DutchBidCommand;
 import com.backend.Auction_Svc.Entity.DutchAuction;
 import com.backend.Auction_Svc.Repository.DutchAuctionRepository;
-import org.springframework.data.redis.connection.stream.ObjectRecord;
+import org.springframework.data.redis.connection.stream.MapRecord;
 import org.springframework.data.redis.connection.stream.StreamRecords;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -23,11 +23,11 @@ public class DutchAuctionService {
 
     private final DutchAuctionRepository repository;
     private final WalletClient walletClient;
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final StringRedisTemplate redisTemplate;
 
     private static final String DUTCH_BID_STREAM = "dutch-bids-stream";
 
-    public DutchAuctionService(DutchAuctionRepository repository, WalletClient walletClient, RedisTemplate<String, Object> redisTemplate) {
+    public DutchAuctionService(DutchAuctionRepository repository, WalletClient walletClient, StringRedisTemplate redisTemplate) {
         this.repository = repository;
         this.walletClient = walletClient;
         this.redisTemplate = redisTemplate;
@@ -109,18 +109,33 @@ public class DutchAuctionService {
             return false;
         }
 
+        Instant now = Instant.now();
+        if (auction.getStartTime() == null || auction.getEndTime() == null
+                || now.isBefore(auction.getStartTime()) || !now.isBefore(auction.getEndTime())) {
+            return false;
+        }
+
         BigDecimal priceToAccept = auction.getCurrentPrice();
         String refId = "DUTCH_BID_" + UUID.randomUUID().toString();
 
         Boolean isReserved = walletClient.reserveFunds(userId, priceToAccept, refId).getBody();
 
         if (Boolean.TRUE.equals(isReserved)) {
-            ObjectRecord<String, DutchBidCommand> record = StreamRecords.newRecord()
+            MapRecord<String, String, String> record = StreamRecords.newRecord()
                     .in(DUTCH_BID_STREAM)
-                    .ofObject(new DutchBidCommand(auctionId, userId, priceToAccept, refId));
+                    .ofMap(Map.of(
+                            "auctionId", auctionId,
+                            "userId", userId,
+                            "bidAmount", priceToAccept.toPlainString(),
+                            "refId", refId));
 
-            redisTemplate.opsForStream().add(record);
-            return true;
+            try {
+                redisTemplate.opsForStream().add(record);
+                return true;
+            } catch (RuntimeException exception) {
+                walletClient.releaseFunds(userId, priceToAccept, refId + "_RELEASE");
+                throw new IllegalStateException("Could not queue the Dutch bid", exception);
+            }
         }
 
         return false;

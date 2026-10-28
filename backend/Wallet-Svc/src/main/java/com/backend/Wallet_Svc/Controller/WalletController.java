@@ -20,10 +20,11 @@ public class WalletController {
     @PostMapping("/recharge")
     public ResponseEntity<String> rechargeWallet(
             @RequestHeader("X-User-Id") String userId,
+            @RequestHeader("X-User-Email") String emailId,
             @RequestParam BigDecimal amount,
             @RequestParam String refId) {
 
-        boolean success = walletService.rechargeWallet(userId, amount, refId);
+        boolean success = walletService.rechargeWallet(userId, emailId, amount, refId);
         if (success) {
             return ResponseEntity.ok("Wallet successfully recharged.");
         } else {

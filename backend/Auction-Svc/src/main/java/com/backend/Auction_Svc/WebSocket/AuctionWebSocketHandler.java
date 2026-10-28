@@ -5,8 +5,10 @@ import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -14,6 +16,11 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class AuctionWebSocketHandler extends TextWebSocketHandler {
 
     private final ConcurrentHashMap<String, CopyOnWriteArrayList<WebSocketSession>> subscriptions = new ConcurrentHashMap<>();
+    private final ObjectMapper objectMapper;
+
+    public AuctionWebSocketHandler(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) {
@@ -39,7 +46,11 @@ public class AuctionWebSocketHandler extends TextWebSocketHandler {
     public void broadcastUpdate(String auctionId, String type, Object payload) {
         CopyOnWriteArrayList<WebSocketSession> sessions = subscriptions.getOrDefault(auctionId, new CopyOnWriteArrayList<>());
 
-        String jsonUpdate = String.format("{\"type\":\"%s\", \"auctionId\":\"%s\", \"payload\":%s}", type, auctionId, payload);
+        String jsonUpdate = objectMapper.writeValueAsString(Map.of(
+                "type", type,
+                "auctionId", auctionId,
+                "payload", payload
+        ));
 
         sessions.forEach(session -> {
             try {

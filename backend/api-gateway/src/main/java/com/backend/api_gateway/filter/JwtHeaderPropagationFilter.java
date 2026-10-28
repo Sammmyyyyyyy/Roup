@@ -19,13 +19,17 @@ public class JwtHeaderPropagationFilter implements GlobalFilter {
                     if (principal instanceof Jwt jwt) {
                         // 1. Extract the authentic ID from the cryptographically verified JWT payload
                         String trustedUserId = jwt.getClaimAsString("userId");
+                        String trustedUserEmail = jwt.getSubject();
 
-                        // 2. Mutate the request: strip whatever the client sent, then write the verified ID
+                        // 2. Mutate the request: strip caller-supplied identity headers, then write verified values.
                         ServerWebExchange mutatedExchange = exchange.mutate()
                                 .request(r -> r
-                                        .headers(h -> h.remove("X-User-Id"))
-                                        // Injects extracted strictly from the token
+                                        .headers(h -> {
+                                            h.remove("X-User-Id");
+                                            h.remove("X-User-Email");
+                                        })
                                         .header("X-User-Id", trustedUserId)
+                                        .header("X-User-Email", trustedUserEmail)
                                 )
                                 .build();
 

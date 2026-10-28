@@ -43,14 +43,23 @@ public class SecondaryMarketController {
     }
 
     @PostMapping("/buy")
-    public ResponseEntity<String> placeBuyOrder(@RequestBody OrderRequest request) {
-        String orderId = service.placeBuyOrder(request);
+    public ResponseEntity<String> placeBuyOrder(
+            @RequestHeader("X-User-Id") String userId,
+            @RequestBody OrderRequest request) {
+        String orderId = service.placeBuyOrder(withVerifiedUserId(request, userId));
         return ResponseEntity.accepted().body("Buy order queued for execution. Order ID: " + orderId);
     }
 
     @PostMapping("/sell")
-    public ResponseEntity<String> placeSellOrder(@RequestBody OrderRequest request) {
-        String orderId = service.placeSellOrder(request);
+    public ResponseEntity<String> placeSellOrder(
+            @RequestHeader("X-User-Id") String userId,
+            @RequestBody OrderRequest request) {
+        String orderId = service.placeSellOrder(withVerifiedUserId(request, userId));
         return ResponseEntity.accepted().body("Sell order queued for execution. Order ID: " + orderId);
+    }
+
+    private OrderRequest withVerifiedUserId(OrderRequest request, String userId) {
+        return new OrderRequest(
+                request.assetId(), userId, request.side(), request.price(), request.quantity());
     }
 }

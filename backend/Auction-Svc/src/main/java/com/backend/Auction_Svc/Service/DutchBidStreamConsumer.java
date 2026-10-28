@@ -6,14 +6,18 @@ import com.backend.Auction_Svc.Entity.DutchAuction;
 import com.backend.Auction_Svc.Repository.DutchAuctionRepository;
 import com.backend.Auction_Svc.WebSocket.AuctionWebSocketHandler;
 import tools.jackson.databind.ObjectMapper;
+import org.springframework.data.redis.connection.stream.MapRecord;
 import org.springframework.data.redis.connection.stream.ObjectRecord;
 import org.springframework.data.redis.connection.stream.StreamRecords;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.stream.StreamListener;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.util.Map;
+
 @Service
-public class DutchBidStreamConsumer implements StreamListener<String, ObjectRecord<String, DutchBidCommand>> {
+public class DutchBidStreamConsumer implements StreamListener<String, MapRecord<String, String, String>> {
 
     private final DutchAuctionRepository repository;
     private final RedisTemplate<String, String> redisTemplate;
@@ -34,8 +38,14 @@ public class DutchBidStreamConsumer implements StreamListener<String, ObjectReco
     }
 
     @Override
-    public void onMessage(ObjectRecord<String, DutchBidCommand> message) {
-        DutchBidCommand command = message.getValue();
+    public void onMessage(MapRecord<String, String, String> message) {
+        Map<String, String> f = message.getValue();
+        DutchBidCommand command = new DutchBidCommand(
+                f.get("auctionId"),
+                f.get("userId"),
+                new BigDecimal(f.get("bidAmount")),
+                f.get("refId"));
+
         DutchAuction auction = repository.findById(command.auctionId()).orElse(null);
 
         if (auction != null && auction.isActive()) {
@@ -53,7 +63,6 @@ public class DutchBidStreamConsumer implements StreamListener<String, ObjectReco
                     command.refId() + "_REFUND"
             );
 
-            // Convert payload to a plain JSON string to bypass Spring Data Redis serializers entirely and avoid @class metadata
             String jsonPayload = objectMapper.writeValueAsString(releaseEvent);
 
             ObjectRecord<String, String> record = StreamRecords.newRecord()

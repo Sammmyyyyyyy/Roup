@@ -3,7 +3,6 @@ package com.backend.Auction_Svc.Controller;
 import com.backend.Auction_Svc.Dto.DutchAuctionCreateRequest;
 import com.backend.Auction_Svc.Dto.DutchAuctionResponse;
 import com.backend.Auction_Svc.Dto.DutchAuctionUpdateRequest;
-import com.backend.Auction_Svc.Dto.DutchPurchaseRequest;
 import com.backend.Auction_Svc.Service.DutchAuctionService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -61,9 +60,9 @@ public class DutchAuctionController {
     @PostMapping("/{auctionId}/accept")
     public ResponseEntity<String> acceptAuctionPrice(
             @PathVariable String auctionId,
-            @RequestBody DutchPurchaseRequest request) {
+            @RequestHeader("X-User-Id") String userId) {
 
-        boolean queued = service.submitDutchBid(auctionId, request.userId());
+        boolean queued = service.submitDutchBid(auctionId, userId);
 
         if (queued) {
             return ResponseEntity.accepted().body("Bid queued for processing.");

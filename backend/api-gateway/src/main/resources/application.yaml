@@ -59,7 +59,7 @@ spring:
             - id: wallet-route
               uri: lb://wallet-service
               predicates:
-                - Path=/api/wallet/**
+                - Path=/api/wallet/**,/api/wallet/recharge,/api/wallet/withdraw
               filters:
                 - name: CircuitBreaker
                   args:
@@ -72,10 +72,15 @@ spring:
                     redis-rate-limiter.requestedTokens: 1
                     key-resolver: "#{@ipKeyResolver}"
 
+            - id: auction-ws-route
+              uri: lb:ws://auction-service
+              predicates:
+                - Path=/ws/**
+
             - id: auction-route
               uri: lb://auction-service
               predicates:
-                - Path=/api/auctions/**
+                - Path=/api/auctions/**,/api/dutch-auctions/**,/api/secondary-markets/**
               filters:
                 - name: CircuitBreaker
                   args:

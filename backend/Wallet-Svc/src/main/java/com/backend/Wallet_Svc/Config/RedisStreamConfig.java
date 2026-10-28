@@ -47,7 +47,7 @@ public class RedisStreamConfig {
 
         String consumerName = InetAddress.getLocalHost().getHostName();
 
-        Subscription subscription = container.receive(
+        Subscription subscription = container.receiveAutoAck(
                 Consumer.from(CONSUMER_GROUP, consumerName),
                 StreamOffset.create(STREAM_KEY, ReadOffset.lastConsumed()),
                 consumer

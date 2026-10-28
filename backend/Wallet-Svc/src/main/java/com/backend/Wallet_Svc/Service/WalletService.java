@@ -1,6 +1,7 @@
 package com.backend.Wallet_Svc.Service;
 
 import com.backend.Wallet_Svc.Entity.LedgerEntry;
+import com.backend.Wallet_Svc.Entity.User;
 import com.backend.Wallet_Svc.Repository.LedgerEntryRepository;
 import com.backend.Wallet_Svc.Repository.UserRepository;
 import org.springframework.stereotype.Service;
@@ -21,15 +22,29 @@ public class WalletService {
     }
 
     @Transactional
-    public boolean rechargeWallet(String userId, BigDecimal amount, String refId) {
+    public boolean rechargeWallet(String userId, String emailId, BigDecimal amount, String refId) {
         if (ledgerEntryRepository.existsByTransactionRef(refId)) return true; // Idempotency check
 
+        createWalletIfAbsent(userId, emailId);
         int updatedRows = userRepository.rechargeWallet(userId, amount);
         if (updatedRows == 0) return false;
 
         // Ledger: Money enters the system from a payment gateway into the user's available balance
         recordLedger(refId, "SYSTEM_PAYMENT_GATEWAY", "USER_UNRESERVED_" + userId, amount);
         return true;
+    }
+
+    private void createWalletIfAbsent(String userId, String emailId) {
+        if (userRepository.existsById(userId)) return;
+
+        User user = new User();
+        user.setId(userId);
+        user.setEmailId(emailId);
+        user.setTotalBalance(BigDecimal.ZERO);
+        user.setAvailableBalance(BigDecimal.ZERO);
+        user.setReservedBalance(BigDecimal.ZERO);
+        user.setCreatedAt(LocalDateTime.now());
+        userRepository.save(user);
     }
 
     // Withdraw Funds

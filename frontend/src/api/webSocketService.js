@@ -10,6 +10,12 @@ function getWsUrl(endpoint) {
   return `${protocol}//${window.location.host}${endpoint}`;
 }
 
+const RECONNECT_DELAY_MS = 2_000;
+
+function closeSocket(socket) {
+  if (socket?.readyState === WebSocket.OPEN) socket.close();
+}
+
 /**
  * Hook to subscribe to live order book updates for a secondary market.
  * Backend: Auction-Svc /ws/markets
@@ -23,14 +29,18 @@ export function useMarketOrderBook(marketId) {
     if (!marketId) return;
 
     let socket;
+    let reconnectTimer;
     let isMounted = true;
 
-    try {
+    const connect = () => {
       socket = new WebSocket(getWsUrl('/ws/markets'));
       wsRef.current = socket;
 
       socket.onopen = () => {
-        if (!isMounted) return;
+        if (!isMounted) {
+          socket.close();
+          return;
+        }
         setIsConnected(true);
         socket.send(`SUBSCRIBE:${marketId}`);
       };
@@ -56,16 +66,16 @@ export function useMarketOrderBook(marketId) {
 
       socket.onclose = () => {
         if (isMounted) setIsConnected(false);
+        if (isMounted) reconnectTimer = window.setTimeout(connect, RECONNECT_DELAY_MS);
       };
-    } catch {
-      setIsConnected(false);
-    }
+    };
+
+    connect();
 
     return () => {
       isMounted = false;
-      if (socket && socket.readyState === WebSocket.OPEN) {
-        socket.close();
-      }
+      window.clearTimeout(reconnectTimer);
+      closeSocket(socket);
     };
   }, [marketId]);
 
@@ -85,14 +95,18 @@ export function useAuctionLiveUpdates(auctionId) {
     if (!auctionId) return;
 
     let socket;
+    let reconnectTimer;
     let isMounted = true;
 
-    try {
+    const connect = () => {
       socket = new WebSocket(getWsUrl('/ws/auctions'));
       wsRef.current = socket;
 
       socket.onopen = () => {
-        if (!isMounted) return;
+        if (!isMounted) {
+          socket.close();
+          return;
+        }
         setIsConnected(true);
         socket.send(`SUBSCRIBE:${auctionId}`);
       };
@@ -115,16 +129,16 @@ export function useAuctionLiveUpdates(auctionId) {
 
       socket.onclose = () => {
         if (isMounted) setIsConnected(false);
+        if (isMounted) reconnectTimer = window.setTimeout(connect, RECONNECT_DELAY_MS);
       };
-    } catch {
-      setIsConnected(false);
-    }
+    };
+
+    connect();
 
     return () => {
       isMounted = false;
-      if (socket && socket.readyState === WebSocket.OPEN) {
-        socket.close();
-      }
+      window.clearTimeout(reconnectTimer);
+      closeSocket(socket);
     };
   }, [auctionId]);
 

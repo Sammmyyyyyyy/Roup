@@ -1,23 +1,6 @@
-const baseUrl = (import.meta.env.VITE_API_BASE_URL || "http://localhost:8080"||  '').trim().replace(/\/$/, '');
-
-// Path alternate pairs for gateway vs direct service compatibility
-const alternatePaths = [
-  [/^\/api\/secondary-markets(\/.*)?$/, '/api/v1/auctions/secondary-markets$1'],
-  [/^\/api\/v1\/auctions\/secondary-markets(\/.*)?$/, '/api/secondary-markets$1'],
-  [/^\/api\/dutch-auctions(\/.*)?$/, '/api/v1/auctions/dutch-auctions$1'],
-  [/^\/api\/v1\/auctions\/dutch-auctions(\/.*)?$/, '/api/dutch-auctions$1'],
-  [/^\/api\/wallet(\/.*)?$/, '/api/v1/wallet$1'],
-  [/^\/api\/v1\/wallet(\/.*)?$/, '/api/wallet$1'],
-];
-
-function getAlternatePath(path) {
-  for (const [pattern, replacement] of alternatePaths) {
-    if (pattern.test(path)) {
-      return path.replace(pattern, replacement);
-    }
-  }
-  return null;
-}
+// Keep this empty during local development so Vite proxies requests to the gateway.
+// Deployments must supply the public HTTPS gateway through VITE_API_BASE_URL.
+const baseUrl = (import.meta.env.VITE_API_BASE_URL || '').trim().replace(/\/$/, '');
 
 export async function apiRequest(path, { method = 'GET', body, auth = true } = {}) {
   const headers = { Accept: 'application/json' };
@@ -52,21 +35,7 @@ export async function apiRequest(path, { method = 'GET', body, auth = true } = {
     return { response, data };
   }
 
-  let { response, data } = await execute(path);
-
-  // If 404, check if an alternate route prefix exists (e.g. gateway vs direct service path)
-  if (response.status === 404) {
-    const alternate = getAlternatePath(path);
-    if (alternate) {
-      try {
-        const retry = await execute(alternate);
-        if (retry.response.ok) {
-          response = retry.response;
-          data = retry.data;
-        }
-      } catch { /* Keep initial response */ }
-    }
-  }
+  const { response, data } = await execute(path);
 
   if (!response.ok) {
     if (response.status === 401 || response.status === 403) {

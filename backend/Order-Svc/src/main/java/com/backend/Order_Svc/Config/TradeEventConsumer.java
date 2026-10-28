@@ -28,8 +28,7 @@ public class TradeEventConsumer implements StreamListener<String, MapRecord<Stri
             System.out.println("Processing trade execution: " + event);
 
         } catch (Exception e) {
-            // Send to Dead Letter Queue or log failure
-            System.err.println("Failed to process stream message: " + e.getMessage());
+            throw new IllegalStateException("Failed to process trade event", e);
         }
     }
 }

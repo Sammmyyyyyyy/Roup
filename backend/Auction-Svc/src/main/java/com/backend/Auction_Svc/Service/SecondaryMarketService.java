@@ -92,6 +92,7 @@ public class SecondaryMarketService {
     }
 
     public String placeBuyOrder(OrderRequest request) {
+        validateOrder(request);
         SecondaryMarketPlace market = validateAndGetActiveMarket(request.assetId());
 
         Order order = new Order(
@@ -113,6 +114,7 @@ public class SecondaryMarketService {
     }
 
     public String placeSellOrder(OrderRequest request) {
+        validateOrder(request);
         SecondaryMarketPlace market = validateAndGetActiveMarket(request.assetId());
 
         if (request.price().compareTo(market.getMaximumResalePrice()) > 0) {
@@ -141,6 +143,12 @@ public class SecondaryMarketService {
             throw new IllegalStateException("Trading is currently suspended for this market.");
         }
         return market;
+    }
+
+    private void validateOrder(OrderRequest request) {
+        if (request.price() == null || request.price().signum() <= 0 || request.quantity() <= 0) {
+            throw new IllegalArgumentException("Order price and quantity must be greater than zero.");
+        }
     }
 
     private SecondaryMarketResponse mapToResponse(SecondaryMarketPlace market) {
