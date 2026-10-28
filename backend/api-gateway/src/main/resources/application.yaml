@@ -4,6 +4,11 @@ server:
 spring:
   application:
     name: api-gateway
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
   cloud:
     gateway:
       globalcors:
@@ -15,36 +20,137 @@ spring:
             allowedMethods: "*"
             allowedHeaders: "*"
             allowCredentials: true
+
       routes:
+        # --- Auth Route ---
         - id: auth-route
           uri: lb://auth-service
           predicates:
             - Path=/api/signup/**, /api/signin/**, /api/oauth-signin, /oauth2/**, /login/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: authCircuitBreaker
+                fallbackUri: forward:/fallback/auth
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 5      # 5 tokens/sec (prevents brute-force)
+                redis-rate-limiter.burstCapacity: 10
+                redis-rate-limiter.requestedTokens: 1
+                key-resolver: "#{@ipKeyResolver}"
 
+        # --- User Route ---
         - id: user-route
           uri: lb://user-service
           predicates:
             - Path=/api/v1/users/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: userCircuitBreaker
+                fallbackUri: forward:/fallback/user
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 20
+                redis-rate-limiter.burstCapacity: 40
+                redis-rate-limiter.requestedTokens: 1
+                key-resolver: "#{@ipKeyResolver}"
 
+        # --- Wallet Route ---
         - id: wallet-route
           uri: lb://wallet-service
           predicates:
             - Path=/api/v1/wallet/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: walletCircuitBreaker
+                fallbackUri: forward:/fallback/wallet
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 15
+                redis-rate-limiter.burstCapacity: 30
+                redis-rate-limiter.requestedTokens: 1
+                key-resolver: "#{@ipKeyResolver}"
 
+        # --- Auction Route ---
         - id: auction-route
           uri: lb://auction-service
           predicates:
             - Path=/api/v1/auctions/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: auctionCircuitBreaker
+                fallbackUri: forward:/fallback/auction
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 50     # Higher for auction queries
+                redis-rate-limiter.burstCapacity: 100
+                redis-rate-limiter.requestedTokens: 1
+                key-resolver: "#{@ipKeyResolver}"
 
+        # --- Orders Route ---
         - id: orders-route
           uri: lb://orders-service
           predicates:
             - Path=/api/v1/orders/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: ordersCircuitBreaker
+                fallbackUri: forward:/fallback/orders
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 15
+                redis-rate-limiter.burstCapacity: 30
+                redis-rate-limiter.requestedTokens: 1
+                key-resolver: "#{@ipKeyResolver}"
 
 eureka:
   client:
     service-url:
       defaultZone: http://localhost:8761/eureka/
+
+# Resilience4j Global Defaults + Route Instances
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50.0            # Open circuit if 50% fail
+        waitDurationInOpenState: 10000ms      # Wait 10s before testing in half-open
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+    instances:
+      authCircuitBreaker:
+        baseConfig: default
+      userCircuitBreaker:
+        baseConfig: default
+      walletCircuitBreaker:
+        baseConfig: default
+      auctionCircuitBreaker:
+        baseConfig: default
+      ordersCircuitBreaker:
+        baseConfig: default
+
+  timelimiter:
+    configs:
+      default:
+        timeoutDuration: 3s                   # Max wait for downstream response
+    instances:
+      authCircuitBreaker:
+        baseConfig: default
+      userCircuitBreaker:
+        baseConfig: default
+      walletCircuitBreaker:
+        baseConfig: default
+      auctionCircuitBreaker:
+        baseConfig: default
+      ordersCircuitBreaker:
+        baseConfig: default
 
 jwt:
   secret: "ThisIsASuperSecretKeyForJwtAuthentication123456"
