@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react';
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   const gateway = (env.VITE_API_BASE_URL || env.VITE_AUTH_API_BASE_URL || 'http://localhost:8080').replace(/\/$/, '');
-  const proxySettings = { target: gateway, changeOrigin: true };
+  const proxySettings = { target: gateway, changeOrigin: true, secure: false };
   // Proxy REST, OAuth, and WebSocket endpoints
   const proxy = Object.fromEntries([
     ['/api', proxySettings],

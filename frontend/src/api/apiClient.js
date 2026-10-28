@@ -1,4 +1,11 @@
-const baseUrl = (import.meta.env.VITE_API_BASE_URL || '').trim().replace(/\/$/, '');
+export function getApiBase() {
+  const envBase = (import.meta.env.VITE_API_BASE_URL || '').trim().replace(/\/$/, '');
+  if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+    return '';
+  }
+  return envBase;
+}
+const baseUrl = getApiBase();
 
 // Path alternate pairs for gateway vs direct service compatibility
 const alternatePaths = [
