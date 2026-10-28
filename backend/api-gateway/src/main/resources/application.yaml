@@ -1,3 +1,50 @@
+server:
+  port: 8080
+
 spring:
   application:
     name: api-gateway
+  cloud:
+    gateway:
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins:
+              - "http://localhost:5173"
+              - "https://khushi-2006yadav.github.io/Arovia"
+            allowedMethods: "*"
+            allowedHeaders: "*"
+            allowCredentials: true
+      routes:
+        - id: auth-route
+          uri: lb://auth-service
+          predicates:
+            - Path=/api/signup/**, /api/signin/**, /api/oauth-signin, /oauth2/**, /login/**
+
+        - id: user-route
+          uri: lb://user-service
+          predicates:
+            - Path=/api/v1/users/**
+
+        - id: wallet-route
+          uri: lb://wallet-service
+          predicates:
+            - Path=/api/v1/wallet/**
+
+        - id: auction-route
+          uri: lb://auction-service
+          predicates:
+            - Path=/api/v1/auctions/**
+
+        - id: orders-route
+          uri: lb://orders-service
+          predicates:
+            - Path=/api/v1/orders/**
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+
+jwt:
+  secret: "ThisIsASuperSecretKeyForJwtAuthentication123456"

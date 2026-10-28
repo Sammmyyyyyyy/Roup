@@ -1,3 +1,21 @@
+server:
+  port: 0
+
 spring:
   application:
-    name: Wallet-Svc
+    name: wallet-service
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:5432/roup_wallet
+    username: ${DB_USER:postgres}
+    password: ${DB_PASS:postgres}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://${EUREKA_HOST:localhost}:8761/eureka/
+  instance:
+    instance-id: ${spring.application.name}:${random.uuid}

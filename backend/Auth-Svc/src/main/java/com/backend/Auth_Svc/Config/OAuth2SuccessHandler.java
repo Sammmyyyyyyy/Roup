@@ -51,7 +51,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             userRepository.save(user);
         }
 
-        String token = jwtService.generateToken(email);
+        String token = jwtService.generateToken(email, user.getId());
 
         String targetUrl = "https://khushi-2006yadav.github.io/Arovia/oauth-success?token=" + token; // Yaha se frontend me token ko extract karns hoga
         getRedirectStrategy().sendRedirect(request, response, targetUrl);

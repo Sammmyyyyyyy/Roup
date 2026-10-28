@@ -19,7 +19,7 @@ public class WalletController {
 
     @PostMapping("/recharge")
     public ResponseEntity<String> rechargeWallet(
-            @RequestParam String userId,
+            @RequestHeader("X-User-Id") String userId,
             @RequestParam BigDecimal amount,
             @RequestParam String refId) {
 
@@ -33,7 +33,7 @@ public class WalletController {
 
     @PostMapping("/withdraw")
     public ResponseEntity<String> withdrawFunds(
-            @RequestParam String userId,
+            @RequestHeader("X-User-Id") String userId,
             @RequestParam BigDecimal amount,
             @RequestParam String refId) {
 
@@ -49,7 +49,7 @@ public class WalletController {
     // Called synchronously by Feign client to validate and reserve before queueing the bid
     @PostMapping("/reserve")
     public ResponseEntity<Boolean> reserveFunds(
-            @RequestParam String userId,
+            @RequestHeader("X-User-Id") String userId,
             @RequestParam BigDecimal amount,
             @RequestParam String refId) {
 
@@ -60,7 +60,7 @@ public class WalletController {
     // Called asynchronously when a bid is rejected, cancelled, or outbid
     @PostMapping("/release")
     public ResponseEntity<Boolean> releaseFunds(
-            @RequestParam String userId,
+            @RequestHeader("X-User-Id") String userId,
             @RequestParam BigDecimal amount,
             @RequestParam String refId) {
 
@@ -71,7 +71,7 @@ public class WalletController {
     // Called asynchronously by Orders Service when moving to SETTLEMENT_PENDING/ESCROWED
     @PostMapping("/escrow/deduct")
     public ResponseEntity<Boolean> deductForEscrow(
-            @RequestParam String buyerId,
+            @RequestHeader("X-User-Id") String buyerId,
             @RequestParam BigDecimal amount,
             @RequestParam String refId) {
 
@@ -82,7 +82,7 @@ public class WalletController {
     // Called asynchronously by Orders Service upon delivery confirmation
     @PostMapping("/escrow/settle")
     public ResponseEntity<Boolean> settleSellerPayment(
-            @RequestParam String sellerId,
+            @RequestHeader("X-User-Id") String sellerId,
             @RequestParam BigDecimal amount,
             @RequestParam String refId) {
 

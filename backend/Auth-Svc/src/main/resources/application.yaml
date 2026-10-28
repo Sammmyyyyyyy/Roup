@@ -1,3 +1,22 @@
+server:
+  port: 0
+
 spring:
   application:
-    name: Auth-Svc
+    name: auth-service
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:5432/roup_auth
+    username: ${DB_USER:postgres}
+    password: ${DB_PASS:postgres}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://${EUREKA_HOST:localhost}:8761/eureka/
+  instance:
+    instance-id: ${spring.application.name}:${random.uuid}

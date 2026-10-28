@@ -60,7 +60,7 @@ public class UserService {
 
         User user = userRepository.findByEmailId(signinDto.getEmailId());
 
-        return mapToUserResponseDto(user, jwtService.generateToken(signinDto.getEmailId()));
+        return mapToUserResponseDto(user, jwtService.generateToken(signinDto.getEmailId(), user.getId()));
     }
 
     public UserResponseDto oauthLoginUser(String token) {
