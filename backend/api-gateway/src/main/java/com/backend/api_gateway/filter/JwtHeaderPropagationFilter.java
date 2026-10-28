@@ -16,14 +16,17 @@ public class JwtHeaderPropagationFilter implements GlobalFilter {
                 .filter(c -> c.getAuthentication() != null)
                 .flatMap(c -> {
                     Object principal = c.getAuthentication().getPrincipal();
-
                     if (principal instanceof Jwt jwt) {
-                        // Extract the custom claim we added in the Auth Service
-                        String userId = jwt.getClaimAsString("userId");
+                        // 1. Extract the authentic ID from the cryptographically verified JWT payload
+                        String trustedUserId = jwt.getClaimAsString("userId");
 
-                        // Mutate the request to append the exact header your controllers expect
+                        // 2. Mutate the request: strip whatever the client sent, then write the verified ID
                         ServerWebExchange mutatedExchange = exchange.mutate()
-                                .request(r -> r.header("X-User-Id", userId))
+                                .request(r -> r
+                                        .headers(h -> h.remove("X-User-Id"))
+                                        // Injects extracted strictly from the token
+                                        .header("X-User-Id", trustedUserId)
+                                )
                                 .build();
 
                         return chain.filter(mutatedExchange);
