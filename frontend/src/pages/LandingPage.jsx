@@ -303,11 +303,11 @@ function Showcase() {
 
   return <section className="section showcase-section" id="showcase" aria-labelledby="showcase-title"><div className="shell">
     <Reveal className="showcase-heading"><div><p className="eyebrow">A MARKET FOR YOUR NEXT MOMENT</p><h2 id="showcase-title">Made for the moments<br /><span>that matter.</span></h2></div><p>Discover what’s available across the Roup marketplace.</p></Reveal>
-      <div className={`showcase-activity${status === 'ready' && markets.length ? ' has-markets' : ''}`} aria-live="polite">
+    <div className={`showcase-activity${status === 'ready' && markets.length ? ' has-markets' : ''}`} aria-live="polite">
       <div className="showcase-activity-copy"><span className={`showcase-activity-status${status === 'ready' && markets.length ? ' is-live' : ''}`}><i />{status === 'loading' ? 'Checking availability' : status === 'unavailable' ? 'Marketplace unavailable' : markets.length ? 'Available now' : 'No active markets yet'}</span>
         <p>{status === 'unavailable' ? 'Marketplace activity isn’t available right now. Please try again later.' : status === 'ready' && !markets.length ? 'New markets will appear here when they become available.' : markets.length ? `${markets.length} active ${markets.length === 1 ? 'market' : 'markets'} on Roup.` : 'Explore live marketplace activity and current availability.'}</p>
       </div>
-        {status === 'ready' && markets.length > 0 && <div className="showcase-activity-items">{markets.slice(0, 3).map((market) => <a className="showcase-activity-item" key={market.assetId} href={`/markets/${encodeURIComponent(market.assetId)}`}><span>{market.assetName || 'Unnamed asset'}</span><small>{market.isTradingActive ? 'Trading active' : 'Trading inactive'}</small></a>)}</div>}
+      {status === 'ready' && markets.length > 0 && <div className="showcase-activity-items">{markets.slice(0, 3).map((market) => <a className="showcase-activity-item" key={market.assetId} href={`/markets/${encodeURIComponent(market.assetId)}`}><span>{market.assetName || 'Unnamed asset'}</span><small>{market.isTradingActive ? 'Trading active' : 'Trading inactive'}</small></a>)}</div>}
       <a className="button button-primary" href="/explore">Explore Marketplace <Icon name="arrow" size={16} /></a>
     </div>
   </div></section>;
