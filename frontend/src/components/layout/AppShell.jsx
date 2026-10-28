@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useAuth, useNavigate } from '../../store/appContext.js';
 import ThemeToggle from '../ui/ThemeToggle.jsx';
+import WalletModal from '../ui/WalletModal.jsx';
 
 const iconPaths = {
   compass: <><circle cx="12" cy="12" r="9" /><path d="m15.5 8.5-2.3 4.7-4.7 2.3 2.3-4.7 4.7-2.3Z" /></>,
@@ -12,6 +13,7 @@ const iconPaths = {
   search: <><circle cx="10.8" cy="10.8" r="6.6" /><path d="m16 16 4.3 4.3" /></>,
   chevron: <path d="m9 18 6-6-6-6" />,
   menu: <><path d="M4 7h16M4 12h16M4 17h16" /></>,
+  wallet: <><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" /><path d="M3 5v14a2 2 0 0 0 2 2h16v-5" /><path d="M18 12a2 2 0 0 0 0 4h4v-4Z" /></>,
 };
 
 export function AppIcon({ name, size = 18 }) {
@@ -22,7 +24,7 @@ function Brand() {
   return <a className="brand explore-brand" href="/" aria-label="Roup home"><span className="brand-mark" aria-hidden="true"><i /><i /><i /><i /></span><span>roup<span className="brand-dot">.</span></span></a>;
 }
 
-function SideNav({ mobileOpen, closeMobile, currentPath }) {
+function SideNav({ mobileOpen, closeMobile, currentPath, onOpenWallet }) {
   const navigate = useNavigate();
   const { session, signOut } = useAuth();
   const items = [
@@ -34,6 +36,8 @@ function SideNav({ mobileOpen, closeMobile, currentPath }) {
     ['My Listings', 'tag', '/listings'],
   ];
   const go = (href) => { closeMobile(); navigate(href); };
+  const availableBal = Number(session?.user?.availableBalance ?? 0).toFixed(2);
+
   return <>
     {mobileOpen && <button className="explore-scrim" type="button" aria-label="Close navigation" onClick={closeMobile} />}
     <aside className={`explore-sidebar${mobileOpen ? ' is-open' : ''}`} aria-label="Marketplace navigation">
@@ -44,7 +48,34 @@ function SideNav({ mobileOpen, closeMobile, currentPath }) {
           return <a key={href} className={`side-nav-item${active ? ' is-active' : ''}`} href={href} aria-current={active ? 'page' : undefined} onClick={(event) => { event.preventDefault(); go(href); }}><AppIcon name={icon} /><span>{label}</span>{active && <i aria-hidden="true" />}</a>;
         })}
       </nav>
-      <div className="explore-sidebar-bottom"><div className="side-session-note"><span className="session-dot" /><span>Signed in as<br /><b>{session?.user?.name || session?.user?.emailId || 'Roup member'}</b></span></div>
+      <div className="explore-sidebar-bottom">
+        <button
+          type="button"
+          onClick={onOpenWallet}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            width: '100%',
+            padding: '10px 14px',
+            marginBottom: '10px',
+            border: '1px solid color-mix(in srgb, var(--mint) 30%, var(--line))',
+            borderRadius: '8px',
+            background: 'color-mix(in srgb, var(--mint) 8%, var(--panel))',
+            color: 'var(--text)',
+            fontSize: '12px',
+            cursor: 'pointer',
+            textAlign: 'left',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ color: 'var(--mint)' }}><AppIcon name="wallet" size={17} /></span>
+            <span>Wallet</span>
+          </div>
+          <b style={{ color: 'var(--mint)', fontFamily: 'var(--mono)', fontSize: '12px' }}>${availableBal}</b>
+        </button>
+
+        <div className="side-session-note"><span className="session-dot" /><span>Signed in as<br /><b>{session?.user?.name || session?.user?.emailId || 'Roup member'}</b></span></div>
         <ThemeToggle />
         <button className="side-signout" type="button" onClick={() => { signOut(); navigate('/'); }}><span>Log Out</span></button>
         <span className="sidebar-legal">Roup Exchange · Marketplace</span>
@@ -53,39 +84,121 @@ function SideNav({ mobileOpen, closeMobile, currentPath }) {
   </>;
 }
 
-function UserMenu() {
+function UserMenu({ onOpenWallet }) {
   const { session, signOut } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   const user = session?.user;
+  const availableBal = Number(user?.availableBalance ?? 0).toFixed(2);
+
   useEffect(() => {
     const close = (event) => { if (ref.current && !ref.current.contains(event.target)) setOpen(false); };
     document.addEventListener('pointerdown', close);
     return () => document.removeEventListener('pointerdown', close);
   }, []);
+
   return <div className="user-menu-wrap" ref={ref}>
-    <button className="user-menu-trigger" type="button" aria-expanded={open} onClick={() => setOpen((value) => !value)}><span className="user-avatar"><i>{(user?.name || user?.emailId || 'R').trim().charAt(0).toUpperCase()}</i></span><span className="user-menu-name"><b>{user?.name || 'Roup member'}</b><small>{user?.emailId}</small></span><AppIcon name="chevron" size={15} /></button>
-    {open && <div className="user-dropdown" role="menu"><div className="dropdown-identity"><b>{user?.name || 'Roup member'}</b><span>{user?.emailId}</span></div><button type="button" role="menuitem" onClick={() => { setOpen(false); signOut(); navigate('/'); }}>Log Out</button></div>}
+    <button className="user-menu-trigger" type="button" aria-expanded={open} onClick={() => setOpen((value) => !value)}>
+      <span className="user-avatar"><i>{(user?.name || user?.emailId || 'R').trim().charAt(0).toUpperCase()}</i></span>
+      <span className="user-menu-name">
+        <b>{user?.name || 'Roup member'}</b>
+        <small>{user?.emailId}</small>
+      </span>
+      <AppIcon name="chevron" size={15} />
+    </button>
+    {open && (
+      <div className="user-dropdown" role="menu">
+        <div className="dropdown-identity">
+          <b>{user?.name || 'Roup member'}</b>
+          <span>{user?.emailId}</span>
+          <span style={{ color: 'var(--mint)', fontSize: '11px', marginTop: '4px', display: 'block' }}>
+            Available: ${availableBal}
+          </span>
+        </div>
+        <button
+          type="button"
+          role="menuitem"
+          onClick={() => { setOpen(false); onOpenWallet(); }}
+          style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+        >
+          <AppIcon name="wallet" size={15} />
+          Wallet &amp; Recharge
+        </button>
+        <button
+          type="button"
+          role="menuitem"
+          onClick={() => { setOpen(false); signOut(); navigate('/'); }}
+        >
+          Log Out
+        </button>
+      </div>
+    )}
   </div>;
 }
 
 export default function AppShell({ children, currentPath, searchValue = '', onSearchChange, searchPlaceholder = 'Search the marketplace…', pageClass = '' }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [walletOpen, setWalletOpen] = useState(false);
+  const { session } = useAuth();
+  const availableBal = Number(session?.user?.availableBalance ?? 0).toFixed(2);
+
   useEffect(() => {
-    const escape = (event) => { if (event.key === 'Escape') setMobileOpen(false); };
+    const escape = (event) => {
+      if (event.key === 'Escape') {
+        setMobileOpen(false);
+        setWalletOpen(false);
+      }
+    };
     window.addEventListener('keydown', escape);
     return () => window.removeEventListener('keydown', escape);
   }, []);
+
   return <div className="explore-page">
-    <SideNav mobileOpen={mobileOpen} closeMobile={() => setMobileOpen(false)} currentPath={currentPath} />
+    <SideNav
+      mobileOpen={mobileOpen}
+      closeMobile={() => setMobileOpen(false)}
+      currentPath={currentPath}
+      onOpenWallet={() => setWalletOpen(true)}
+    />
     <div className="explore-app-main">
       <header className="explore-topbar">
         <button className="mobile-drawer-trigger" type="button" aria-label="Open marketplace navigation" aria-expanded={mobileOpen} onClick={() => setMobileOpen(true)}><AppIcon name="menu" /></button>
         {onSearchChange && <label className="market-search"><AppIcon name="search" size={17} /><span className="visually-hidden">Search</span><input type="search" placeholder={searchPlaceholder} value={searchValue} onChange={(event) => onSearchChange(event.target.value)} /><kbd>/</kbd></label>}
-        <UserMenu />
+        
+        {/* Topbar Wallet Quick Button */}
+        <button
+          type="button"
+          onClick={() => setWalletOpen(true)}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '7px 13px',
+            marginLeft: 'auto',
+            marginRight: '8px',
+            border: '1px solid color-mix(in srgb, var(--mint) 35%, var(--line))',
+            borderRadius: '6px',
+            background: 'color-mix(in srgb, var(--mint) 8%, var(--panel))',
+            color: 'var(--text)',
+            fontSize: '12px',
+            cursor: 'pointer',
+            fontWeight: '600',
+            transition: 'background .2s, border-color .2s',
+          }}
+          title="Open Roup Wallet"
+        >
+          <span style={{ color: 'var(--mint)', display: 'grid', placeItems: 'center' }}>
+            <AppIcon name="wallet" size={16} />
+          </span>
+          <span style={{ color: 'var(--mint)', fontFamily: 'var(--mono)' }}>${availableBal}</span>
+        </button>
+
+        <UserMenu onOpenWallet={() => setWalletOpen(true)} />
       </header>
       <main className={`app-page-content ${pageClass}`}>{children}</main>
     </div>
+
+    <WalletModal isOpen={walletOpen} onClose={() => setWalletOpen(false)} />
   </div>;
 }
