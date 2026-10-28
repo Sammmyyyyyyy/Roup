@@ -7,6 +7,7 @@ public record DutchAuctionCreateRequest(
         String assetId,
         String assetImage,
         String assetDiscription,
+        String assetName,
         BigDecimal startingPrice,
         BigDecimal minimumPrice,
         BigDecimal decayAmount,

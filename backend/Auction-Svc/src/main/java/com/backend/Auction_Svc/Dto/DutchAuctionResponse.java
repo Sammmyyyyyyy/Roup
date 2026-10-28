@@ -9,6 +9,7 @@ public record DutchAuctionResponse(
         String sellerId,
         String assetImage,
         String assetDiscription,
+        String assetName,
         BigDecimal currentPrice,
         boolean isActive,
         String winnerId,

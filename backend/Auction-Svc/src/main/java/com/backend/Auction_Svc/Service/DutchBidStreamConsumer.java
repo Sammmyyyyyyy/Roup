@@ -4,7 +4,7 @@ import com.backend.Auction_Svc.Dto.DutchBidCommand;
 import com.backend.Auction_Svc.Dto.FundReleaseEvent;
 import com.backend.Auction_Svc.Entity.DutchAuction;
 import com.backend.Auction_Svc.Repository.DutchAuctionRepository;
-import com.backend.Auction_Svc.WebSocket.NativeWebSocketHandler;
+import com.backend.Auction_Svc.WebSocket.AuctionWebSocketHandler;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.data.redis.connection.stream.ObjectRecord;
@@ -18,7 +18,7 @@ public class DutchBidStreamConsumer implements StreamListener<String, ObjectReco
 
     private final DutchAuctionRepository repository;
     private final RedisTemplate<String, String> redisTemplate;
-    private final NativeWebSocketHandler webSocketHandler;
+    private final AuctionWebSocketHandler webSocketHandler;
     private final ObjectMapper objectMapper;
 
     private static final String FUND_RELEASE_STREAM = "fund-release-stream";
@@ -26,7 +26,7 @@ public class DutchBidStreamConsumer implements StreamListener<String, ObjectReco
     public DutchBidStreamConsumer(
             DutchAuctionRepository repository,
             RedisTemplate<String, String> redisTemplate,
-            NativeWebSocketHandler webSocketHandler,
+            AuctionWebSocketHandler webSocketHandler,
             ObjectMapper objectMapper) {
         this.repository = repository;
         this.redisTemplate = redisTemplate;

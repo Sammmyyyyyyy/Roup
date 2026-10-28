@@ -11,7 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 @Component
-public class NativeWebSocketHandler extends TextWebSocketHandler {
+public class AuctionWebSocketHandler extends TextWebSocketHandler {
 
     private final ConcurrentHashMap<String, CopyOnWriteArrayList<WebSocketSession>> subscriptions = new ConcurrentHashMap<>();
 

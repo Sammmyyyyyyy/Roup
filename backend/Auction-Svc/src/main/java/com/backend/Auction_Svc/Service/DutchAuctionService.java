@@ -39,6 +39,7 @@ public class DutchAuctionService {
         auction.setAssetId(request.assetId());
         auction.setSellerId(sellerId); // Extracted securely from auth headers
         auction.setAssetImage(request.assetImage());
+        auction.setAssetName(request.assetName());
         auction.setAssetDiscription(request.assetDiscription());
 
         auction.setStartingPrice(request.startingPrice());
@@ -100,7 +101,7 @@ public class DutchAuctionService {
         return mapToResponse(repository.save(auction));
     }
 
-    // --- EXISTING BID LOGIC ---
+    //  BID LOGIC
     public boolean submitDutchBid(String auctionId, String userId) {
         DutchAuction auction = repository.findById(auctionId).orElseThrow();
 
@@ -138,6 +139,7 @@ public class DutchAuctionService {
                 auction.getId(),
                 auction.getAssetId(),
                 auction.getSellerId(),
+                auction.getAssetName(),
                 auction.getAssetImage(),
                 auction.getAssetDiscription(),
                 auction.getCurrentPrice(),

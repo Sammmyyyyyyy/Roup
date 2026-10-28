@@ -6,9 +6,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+
 import java.math.BigDecimal;
-import java.util.HashMap;
-import java.util.Map;
 
 @Getter
 @Setter
@@ -18,21 +17,24 @@ import java.util.Map;
 public class SecondaryMarketPlace {
 
     @Id
-    private String marketId;
-
-    private String assetClassId;
+    private String assetId;
+    private String assetName;
+    private String assetImage;
+    private String assetDescription;
 
     private BigDecimal originalFaceValue;
     private BigDecimal capMultiplier;
     private BigDecimal maximumResalePrice;
 
+    private int totalOriginalQuantity;
     private boolean isTradingActive;
 
-    private int totalOriginalQuantity;
-
-
-    public SecondaryMarketPlace(String assetClassId, BigDecimal originalFaceValue, BigDecimal capMultiplier, int totalOriginalQuantity) {
-        this.assetClassId = assetClassId;
+    public SecondaryMarketPlace(String assetId, String assetName, String assetImage, String assetDescription,
+                                BigDecimal originalFaceValue, BigDecimal capMultiplier, int totalOriginalQuantity) {
+        this.assetId = assetId;
+        this.assetName = assetName;
+        this.assetImage = assetImage;
+        this.assetDescription = assetDescription;
         this.originalFaceValue = originalFaceValue;
         this.capMultiplier = capMultiplier;
         this.maximumResalePrice = originalFaceValue.multiply(capMultiplier);
